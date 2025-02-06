@@ -1,0 +1,11 @@
+{
+	cubejs: {
+		apiUrl: 'http://microsvc-cubejs-service'
+	},
+
+	database: {
+		analytics: 'postgres://postgres:postgres@postgres/analytics'
+	},
+
+	general_environment_api_url: "https://ge-eu1-api.bringg.com"
+}

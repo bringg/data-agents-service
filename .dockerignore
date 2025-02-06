@@ -1,0 +1,8 @@
+.git*
+.npmrc
+Dockerfile*
+helm
+Jenkinsfile
+node_modules
+README.md
+app/test

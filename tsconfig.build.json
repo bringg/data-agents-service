@@ -1,0 +1,8 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"declaration": false
+	},
+	"include": ["app"],
+	"exclude": ["app/test", "**/*.test.ts", "**/*.spec.ts", "**/__mocks__", "**/*.fixture.ts", "**/*.fixtures.ts"]
+}

@@ -1,0 +1,19 @@
+{
+  logger: {
+    logstash: {
+      metadata: {
+        qaenv_id: "QAENV"
+      }
+    }
+  },
+  database: {
+    main: {
+      connection: {
+        host: "PGHOST",
+        user: "PGUSER",
+        password: "PGPASSWORD",
+        database: "PGDATABASE"
+      }
+    },
+  }
+}
