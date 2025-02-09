@@ -1,5 +1,0 @@
-{
-	database: {
-		analytics: 'postgres://bringg:dummy@analytics-postgres-proxy.dongosolo.svc/analytics'
-	},
-}

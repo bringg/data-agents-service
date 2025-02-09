@@ -2,18 +2,23 @@
   logger: {
     logstash: {
       metadata: {
-        qaenv_id: "QAENV"
+        qaenv_id: "QAENV",
       }
     }
   },
+
   database: {
-    main: {
+    main:{
       connection: {
         host: "PGHOST",
         user: "PGUSER",
         password: "PGPASSWORD",
-        database: "PGDATABASE"
-      }
-    },
-  }
+        database: "PGDATABASE",
+      },
+    }
+  },
+
+  jwt: {
+		internalSignKey: 'BRINGG_JWT_SIGN_KEY_INTERNAL'
+	}
 }

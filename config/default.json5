@@ -1,50 +1,26 @@
+/**
+ * default configuration file
+ * put here configuration which are usable across all environments
+ *
+ * note the file is in JSON5 format (http://json5.org)
+ */
 {
-	cubejs: {
-		apiUrl: 'http://cubejs-service.default.svc'
-	},
-
+	// built-in HTTP server
 	httpServer: {
-		port: 3001
+		port: 3001,
+		service_pattern: [
+			// Use either ts or js (in dev and test it will use ts and in prod it will use js)
+			'./**/*_http_api.{ts,js}'
+		]
 	},
 
-	profiling_server: {
-		http_port: 9098
-	},
-
-	database: {
-		analytics: 'postgres://bringg:dummy@analytics-postgres-proxy.dongosolo.svc/analytics'
-	},
-
-	servicebus: {
-		adapter_config: {
-			prefetch: 2, // TODO: prefetch for default channel should be changes to 10 after deployment of https://bringg.atlassian.net/browse/BRNGG-24940
-			executeReportQueueChannelPrefetch: 1
-		}
-	},
-
-	translations: {
-		apiKey: '1335add6d6d5c10f78400fa42e9bf205',
-		projectId: 488221
-	},
-
-	reportExecutionFileLinkEncryptionKey: '94ee059335e587e501cc4bf90613e0814f00a7b08bc7c648fd865a2af6a22cc2',
-
+	// airbrake configuration
 	airbrake: {
-		projectId: 416086,
-		projectKey: 'd0cc2d07994c5efb3718b4b0676d1805'
+		projectId: 581979,
+		projectKey: 'cb430bd75b72f191048fbde373fd1686'
 	},
 
 	sentry: {
-		dsn: 'https://352408a7a16a371aef41117953ccaa7e@o4507413897347072.ingest.de.sentry.io/4507861175435344'
-	},
-
-	logger: {
-		verbose: {
-			enable: true
-		}
-	},
-
-	analyticsGeneralServiceApiKey: 'Y1c5WFpFRlBlbG94Y1ZOVmRrOTZXVzlpTnpRPQ==',
-
-	enableMerchantCheckInSql: true
+		dsn: 'https://824d395211dc741ae94adfc50b42046e@o4507413897347072.ingest.de.sentry.io/4507882145054800'
+	}
 }

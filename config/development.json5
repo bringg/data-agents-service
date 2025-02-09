@@ -1,15 +1,5 @@
 {
-	cubejs: {
-		apiUrl: 'http://localhost:4000'
-	},
-
-	httpServer: {
-		port: 3015
-	},
-
-	database: {
-		analytics: 'postgres://postgres:postgres@localhost/analytics_development'
-	},
-
-	enableMerchantCheckInSql: false
+  httpServer: {
+    port: 3010,
+  }
 }
