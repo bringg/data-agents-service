@@ -6,10 +6,10 @@ import { StatusCodes } from 'http-status-codes';
 
 import { v4 as uuidv4 } from 'uuid';
 import { ContinueChatDto, NewChatDto } from './types';
-import { callModel } from 'app/services/workflow/graph/graph';
+import { AgentWorkflow } from '../../services/workflow/graph/graph';
 
 @Path('/chat')
-@Security('*', 'bringg-jwt')
+// @Security('*', 'bringg-jwt')
 export class ChatController {
 	@Context
 	public context: ServiceContext;
@@ -24,16 +24,17 @@ export class ChatController {
 	public async newChat({ initialMessage }: NewChatDto) {
 		const userId = this.context.request.user?.userId;
 
-		if (!userId) {
-			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
-		}
+		// if (!userId) {
+		// 	throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
+		// }
 
 		const threadId = uuidv4();
 
 		//TODO - store in redis for POC [userId : {threadId, initialMessage}]
 		//TODO - store in pg for long-term
 
-		callModel(initialMessage, threadId, this.context.response);
+		const agentWorkflow = new AgentWorkflow(initialMessage, threadId, this.context.response);
+		await agentWorkflow.streamGraph();
 	}
 
 	@Path(`/:threadId`)
