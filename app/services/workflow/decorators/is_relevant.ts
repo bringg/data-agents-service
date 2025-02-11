@@ -10,7 +10,7 @@ export function IsRelevant(target: any, propertyKey: string, descriptor: Propert
 	descriptor.value = async function (...args: any[]) {
 		// Retrieve the question from this.messages[0].content.
 		// Adjust this extraction based on your actual HumanMessage structure.
-		const question: string = this.messages[0].content;
+		const question: string = this.userInput;
 
 		const relevance = await checkQuestionRelevance(question);
 

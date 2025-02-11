@@ -2,7 +2,7 @@ import { BaseMessage } from '@langchain/core/messages';
 import { BinaryOperatorAggregate, StateType, Annotation } from '@langchain/langgraph';
 import { AnnotationRoot } from '@langchain/langgraph/dist/graph';
 
-type BasicAnnotationRoot = {
+type MainAnnotationRoot = {
 	user_input: typeof Annotation<string>;
 	user_id: typeof Annotation<number>;
 	merchant_id: typeof Annotation<number>;
@@ -10,6 +10,6 @@ type BasicAnnotationRoot = {
 	next: BinaryOperatorAggregate<{}, unknown>;
 };
 
-export type GraphStateType = AnnotationRoot<BasicAnnotationRoot>;
+export type MainGraphStateType = AnnotationRoot<MainAnnotationRoot>;
 
-export type WorkflowStateType = StateType<BasicAnnotationRoot>;
+export type MainWorkflowStateType = StateType<MainAnnotationRoot>;

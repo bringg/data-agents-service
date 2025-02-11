@@ -1,5 +1,5 @@
-import { GraphState } from '../graph/graph';
-import { analyticsServiceTool } from './analyticsServiceTool';
+import { GraphState } from '../graphs/main_graph/main_graph';
+import { analyticsServiceTool } from './bi_dashboards_tool';
 import { reportsBuilderTool } from './reportsBuilderTool';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
 
