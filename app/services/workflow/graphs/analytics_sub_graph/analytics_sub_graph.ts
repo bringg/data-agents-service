@@ -1,29 +1,17 @@
-import { BaseMessage, HumanMessage } from '@langchain/core/messages';
-import { Annotation, StateGraph, START, END, StreamMode } from '@langchain/langgraph';
-import { biDashboardsAgent, createAnalyticsSupervisorAgent, reportsAgent } from '../../agents';
+import { BaseMessage } from '@langchain/core/messages';
+import { Annotation, StateGraph, START, END } from '@langchain/langgraph';
+import { biDashboardsAgent, reportsAgent } from '../../agents';
 import { AnalyticsGraphStateType } from './types';
-import { Runnable, RunnableConfig, RunnableLambda } from '@langchain/core/runnables';
-import { analyticsSupervisorMembers } from '../../agents/analytics_agents/constants';
+import { ANALYTICS_MEMBERS } from '../../agents/analytics_agents/constants';
+import { ChatOpenAI } from '@langchain/openai';
+import { ANALYTICS_SUPERVISOR_PROMPT } from '../../prompts';
+import { createTeamSupervisor } from '../../agents/utils';
 
-export class AnalyticsSubGraph {
-	private readonly options = { recursionLimit: 15, streamMode: 'updates' as StreamMode };
-	private messages: BaseMessage[] = [];
-
-	private userInput: string;
-	private threadId: string;
-	private merchantId: number;
-	private userId: number;
-
+export class AnalyticsWorkflow {
 	private GraphState: AnalyticsGraphStateType;
+	private llm: ChatOpenAI;
 
-	constructor(userInput: string, threadId: string, merchantId: number, userId: number) {
-		this.messages = [new HumanMessage(userInput)];
-
-		this.threadId = threadId;
-		this.userInput = userInput;
-		this.merchantId = merchantId;
-		this.userId = userId;
-
+	constructor(llm: ChatOpenAI) {
 		// Initialize GraphState
 		this.GraphState = Annotation.Root({
 			merchant_id: Annotation<number>,
@@ -40,45 +28,31 @@ export class AnalyticsSubGraph {
 			instructions: Annotation<string>({
 				reducer: (x, y) => y ?? x,
 				default: () => "Solve the human's question."
-			})
+			}),
+			llm: Annotation<ChatOpenAI>
 		});
+
+		this.llm = llm;
 	}
 
-	public async createAnalyticsChain(): Promise<
-		Runnable<
-			{
-				messages: BaseMessage[];
-			},
-			any,
-			RunnableConfig<Record<string, any>>
-		>
-	> {
+	public async createAnalyticsGraph() {
 		// Create graph supervisor
-		const analyticsSupervisorAgent = await createAnalyticsSupervisorAgent();
-
+		const supervisorAgent = await createTeamSupervisor(this.llm, ANALYTICS_SUPERVISOR_PROMPT, ANALYTICS_MEMBERS);
 		// Create and compile the graph
-		const analyticsSubGraph = new StateGraph(this.GraphState)
-			.addNode('BiDashboardsAgent', biDashboardsAgent)
-			.addNode('ReportsAgent', reportsAgent)
-			.addNode('AnalyticsSupervisor', analyticsSupervisorAgent)
-			.addEdge('BiDashboardsAgent', 'AnalyticsSupervisor')
-			.addEdge('ReportsAgent', 'AnalyticsSupervisor')
+		const analyticsGraph = new StateGraph(this.GraphState)
+			.addNode('BiDashboards', biDashboardsAgent)
+			.addNode('Reports', reportsAgent)
+			.addNode('AnalyticsSupervisor', supervisorAgent)
+			.addEdge('BiDashboards', 'AnalyticsSupervisor')
+			.addEdge('BiDashboards', 'AnalyticsSupervisor')
 			.addConditionalEdges('AnalyticsSupervisor', (x: any) => x.next, {
-				BiDashboardsAgent: 'BiDashboardsAgent',
-				ReportsAgent: 'ReportsAgent',
+				BiDashboardsAgent: 'BiDashboards',
+				ReportsAgent: 'Reports',
 				FINISH: END
 			})
-			.addEdge(START, 'AnalyticsSupervisor');
+			.addEdge(START, 'AnalyticsSupervisor')
+			.compile();
 
-		const enterAuthoringChain = RunnableLambda.from(({ messages }: { messages: BaseMessage[] }) => {
-			return {
-				messages: messages,
-				team_members: analyticsSupervisorMembers
-			};
-		});
-
-		const analyticsChain = enterAuthoringChain.pipe(analyticsSubGraph.compile());
-
-		return analyticsChain;
+		return analyticsGraph;
 	}
 }

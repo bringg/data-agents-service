@@ -1,9 +1,4 @@
-export const ANALYTICS_SERVICE_TOOL_PROMPT = `
-Tool Name: analytics_service
-Description: Provides access to Bringg’s Analytics Service endpoints.
-
----
-## ENDPOINTS YOU CAN CALL
+export const BI_DASHBOARDS_AGENT_PROMPT = `## ENDPOINTS YOU CAN CALL
 
 1) **Get Widgets Catalog (GET)**  
    • URL: '/analytics-service/v1/dashboards/dashboard-type/0/widgets-catalog-items'  

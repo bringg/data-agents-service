@@ -2,13 +2,16 @@ import { BaseMessage, HumanMessage } from '@langchain/core/messages';
 import { Annotation, StateGraph, START, END, StreamMode } from '@langchain/langgraph';
 import { Response } from 'express';
 import { IsRelevant } from '../../decorators';
-import { createMainSupervisorAgent, documentationAgent } from '../../agents';
-import { MainGraphStateType } from './types';
-import { RunnableLambda } from '@langchain/core/runnables';
-import { AnalyticsSubGraph } from '../analytics_sub_graph';
+import { documentationAgent } from '../../agents';
+import { SuperGraphStateType } from './types';
+import { AnalyticsWorkflow } from '../analytics_sub_graph';
+import { ChatOpenAI } from '@langchain/openai';
+import { createTeamSupervisor } from '../../agents/utils';
+import { MAIN_SUPERVISOR_PROMPT } from '../../prompts';
+import { SUPER_MEMBERS } from '../../agents/main_agents/constants';
 
 /**
- * The `AgentWorkflow` class is responsible for managing the workflow of an agent.
+ * The `SuperWorkflow` class is responsible for managing the workflow of the entire agents system.
  * It initializes with user input, a thread ID, and an HTTP response object.
  * The class sets up Server-Sent Events (SSE) headers for the response and provides
  * a method to stream graph events back to the client.
@@ -30,8 +33,8 @@ import { AnalyticsSubGraph } from '../analytics_sub_graph';
  * then streams events from the graph, logging each event and eventually ending the response.
  * @returns {Promise<void>} A promise that resolves when the streaming is complete.
  */
-export class MainGraph {
-	private readonly options = { recursionLimit: 15, streamMode: 'updates' as StreamMode };
+export class SuperWorkflow {
+	private readonly options = { recursionLimit: 15, /**streamMode: 'updates' as StreamMode,*/ subgraphs: true };
 	private messages: BaseMessage[] = [];
 
 	private userInput: string;
@@ -40,7 +43,12 @@ export class MainGraph {
 	private merchantId: number;
 	private userId: number;
 
-	private GraphState: MainGraphStateType;
+	private readonly llm = new ChatOpenAI({
+		apiKey: process.env.OPENAI_API_KEY,
+		modelName: 'gpt-4o-mini'
+	});
+
+	private GraphState: SuperGraphStateType;
 
 	constructor(userInput: string, threadId: string, response: Response, merchantId: number, userId: number) {
 		this.messages = [new HumanMessage(userInput)];
@@ -72,47 +80,36 @@ export class MainGraph {
 			instructions: Annotation<string>({
 				reducer: (x, y) => y ?? x,
 				default: () => "Resolve the user's request."
-			})
+			}),
+			llm: Annotation<ChatOpenAI>
 		});
 	}
 
 	@IsRelevant
 	public async streamGraph(): Promise<void> {
 		// Create main graph supervisor
-		const mainSupervisorAgent = await createMainSupervisorAgent();
+		const supervisorAgent = await createTeamSupervisor(this.llm, MAIN_SUPERVISOR_PROMPT, SUPER_MEMBERS);
 
 		// Create analytics chain
-		const analyticsSubGraph = new AnalyticsSubGraph(this.userInput, this.threadId, this.merchantId, this.userId);
-		const analyticsChain = await analyticsSubGraph.createAnalyticsChain();
-
-		// Create lambdas
-		const getMessages = RunnableLambda.from((state: MainGraphStateType['State']) => {
-			return { messages: state.messages };
-		});
-
-		const joinGraph = RunnableLambda.from((response: any) => {
-			return {
-				messages: [response.messages[response.messages.length - 1]]
-			};
-		});
+		const analyticsWorkflow = new AnalyticsWorkflow(this.llm);
+		const analyticsSubGraph = await analyticsWorkflow.createAnalyticsGraph();
 
 		// Create and compile the graph
 		const mainGraph = new StateGraph(this.GraphState)
-			.addNode('AnalyticsTeam', getMessages.pipe(analyticsChain).pipe(joinGraph))
-			.addNode('DocumentationAgent', documentationAgent)
-			.addNode('MainSupervisor', mainSupervisorAgent)
+			.addNode('AnalyticsTeam', analyticsSubGraph)
+			.addNode('Documentation', documentationAgent)
+			.addNode('MainSupervisor', supervisorAgent)
 			.addEdge(START, 'MainSupervisor')
 			.addEdge('AnalyticsTeam', 'MainSupervisor')
-			.addEdge('DocumentationAgent', 'MainSupervisor')
+			.addEdge('Documentation', 'MainSupervisor')
 			.addConditionalEdges('MainSupervisor', (x: any) => x.next, {
 				AnalyticsTeam: 'AnalyticsTeam',
-				DocumentationAgent: 'DocumentationAgent',
+				Documentation: 'Documentation',
 				FINISH: END
 			})
-			.addEdge(START, 'MainSupervisor')
 			.compile();
 
-		const stream = mainGraph.stream(
+		const stream = await mainGraph.stream(
 			{
 				messages: this.messages,
 				merchant_id: this.merchantId,
@@ -122,13 +119,12 @@ export class MainGraph {
 		);
 
 		// Extract graph events and stream them back
-		for await (const chunk of await stream) {
-			for (const [node, values] of Object.entries(chunk)) {
-				console.log(`Receiving update from node: ${node}`);
-				console.log(values);
-				console.log('\n====\n');
-			}
+		for await (const chunk of stream) {
+			console.log(chunk);
+			console.log('\n====\n');
+			//this.response.write(chunk)
 		}
+
 		this.response.end();
 	}
 }

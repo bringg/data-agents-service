@@ -6,7 +6,7 @@ import { StatusCodes } from 'http-status-codes';
 
 import { v4 as uuidv4 } from 'uuid';
 import { ContinueChatDto, NewChatDto } from './types';
-import { MainGraph } from '../../services/workflow/graphs/main_graph';
+import { SuperWorkflow } from '../../services/workflow/graphs/super_graph';
 
 @Path('/chat')
 // @Security('*', 'bringg-jwt')
@@ -33,7 +33,7 @@ export class ChatController {
 		//TODO - store in redis for POC [userId : {threadId, initialMessage}]
 		//TODO - store in pg for long-term
 
-		const agentWorkflow = new MainGraph(
+		const superGraph = new SuperWorkflow(
 			initialMessage,
 			threadId,
 			this.context.response,
@@ -41,7 +41,7 @@ export class ChatController {
 			merchantId as number // remove
 		);
 
-		await agentWorkflow.streamGraph();
+		await superGraph.streamGraph();
 	}
 
 	@Path(`/:threadId`)

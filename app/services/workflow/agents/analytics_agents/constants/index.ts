@@ -1,1 +1,1 @@
-export * from './analytics_supervsior_members.constats';
+export * from './analytics_members.constats';

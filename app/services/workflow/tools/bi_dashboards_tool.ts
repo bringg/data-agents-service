@@ -1,8 +1,7 @@
-import { DynamicStructuredTool } from '@langchain/core/tools';
+import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
-import { ANALYTICS_SERVICE_TOOL_PROMPT } from '../prompts';
 
-export const biDashboardsTool = new DynamicStructuredTool({
+export const biDashboardsTool = tool(async () => {}, {
 	name: 'bi_dashboards_tool',
 	description: '',
 	schema: z.object({
@@ -12,6 +11,5 @@ export const biDashboardsTool = new DynamicStructuredTool({
 				value: z.number()
 			})
 			.array()
-	}),
-	func: async ({ data }) => {}
+	})
 });

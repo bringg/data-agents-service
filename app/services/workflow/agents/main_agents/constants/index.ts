@@ -1,1 +1,1 @@
-export * from './main_supervisor_members.constants';
+export * from './super_members.constants';

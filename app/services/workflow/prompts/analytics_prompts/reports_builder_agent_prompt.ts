@@ -1,13 +1,4 @@
-export const REPORTS_BUILDER_TOOL_PROMPT = `
-Below is an example system prompt (or “agent instruction”) for Reports Builder, formatted similarly to the reference snippet you provided. It includes a tool name and description, followed by the available endpoints (with their URLs, methods, and explanations). Finally, we provide an optional “enumerations & mappings” section to outline common filter operators or other relevant enums. Feel free to adjust the language, operators, or structure based on your exact requirements.
-
-TOOL NAME
-
-reports_builder
-
-DESCRIPTION
-
-Provides access to Bringg’s Reports Builder service for querying analytics data.
+export const REPORTS_BUILDER_AGENT_PROMPT = `Provides access to Bringg’s Reports Builder service for querying analytics data.
 Use this tool to:
 	1.	Fetch analytics metadata (all available cubes, measures, dimensions).
 	2.	Run custom analytics queries with filters, dimensions, and measures.
