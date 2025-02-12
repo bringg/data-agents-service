@@ -8,7 +8,7 @@ import { AnalyticsWorkflow } from '../analytics_sub_graph';
 import { ChatOpenAI } from '@langchain/openai';
 import { createTeamSupervisor } from '../../agents/utils';
 import { MAIN_SUPERVISOR_PROMPT } from '../../prompts';
-import { SUPER_MEMBERS } from '../../agents/main_agents/constants';
+import { SUPER_MEMBERS } from '../../agents/super_level_agents/constants';
 
 /**
  * The `SuperWorkflow` class is responsible for managing the workflow of the entire agents system.
@@ -34,7 +34,7 @@ import { SUPER_MEMBERS } from '../../agents/main_agents/constants';
  * @returns {Promise<void>} A promise that resolves when the streaming is complete.
  */
 export class SuperWorkflow {
-	private readonly options = { recursionLimit: 15, /**streamMode: 'updates' as StreamMode,*/ subgraphs: true };
+	private readonly options = { recursionLimit: 15, streamMode: 'debug' as StreamMode, subgraphs: true };
 	private messages: BaseMessage[] = [];
 
 	private userInput: string;
@@ -74,8 +74,8 @@ export class SuperWorkflow {
 			}),
 			next: Annotation({
 				// The routing key; defaults to END if not set
-				reducer: (state, update) => update ?? state ?? END,
-				default: () => END
+				reducer: (state, update) => update ?? state,
+				default: () => 'Documentation'
 			}),
 			instructions: Annotation<string>({
 				reducer: (x, y) => y ?? x,
@@ -87,7 +87,7 @@ export class SuperWorkflow {
 
 	@IsRelevant
 	public async streamGraph(): Promise<void> {
-		// Create main graph supervisor
+		// Create super graph supervisor
 		const supervisorAgent = await createTeamSupervisor(this.llm, MAIN_SUPERVISOR_PROMPT, SUPER_MEMBERS);
 
 		// Create analytics chain
@@ -95,32 +95,36 @@ export class SuperWorkflow {
 		const analyticsSubGraph = await analyticsWorkflow.createAnalyticsGraph();
 
 		// Create and compile the graph
-		const mainGraph = new StateGraph(this.GraphState)
+		const superGraph = new StateGraph(this.GraphState)
 			.addNode('AnalyticsTeam', analyticsSubGraph)
 			.addNode('Documentation', documentationAgent)
-			.addNode('MainSupervisor', supervisorAgent)
-			.addEdge(START, 'MainSupervisor')
-			.addEdge('AnalyticsTeam', 'MainSupervisor')
-			.addEdge('Documentation', 'MainSupervisor')
-			.addConditionalEdges('MainSupervisor', (x: any) => x.next, {
+			.addNode('Supervisor', supervisorAgent)
+			.addEdge('AnalyticsTeam', 'Supervisor')
+			.addEdge('Documentation', 'Supervisor')
+			.addConditionalEdges('Supervisor', (x: any) => x.next, {
 				AnalyticsTeam: 'AnalyticsTeam',
 				Documentation: 'Documentation',
 				FINISH: END
 			})
+			.addEdge(START, 'Supervisor')
 			.compile();
 
-		const stream = await mainGraph.stream(
+		const stream = await superGraph.stream(
 			{
 				messages: this.messages,
 				merchant_id: this.merchantId,
-				user_id: this.userId
+				user_id: this.userId,
+				llm: this.llm
 			},
 			this.options
 		);
 
 		// Extract graph events and stream them back
 		for await (const chunk of stream) {
-			console.log(chunk);
+			const typedChunk = chunk as any[];
+			console.log('Graph: ' + typedChunk[0]);
+			console.log(typedChunk[1].type);
+			console.log(typedChunk[1].payload?.result);
 			console.log('\n====\n');
 			//this.response.write(chunk)
 		}

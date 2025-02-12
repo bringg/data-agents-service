@@ -1,5 +1,5 @@
 import { BaseMessage } from '@langchain/core/messages';
-import { BinaryOperatorAggregate, StateType, Annotation } from '@langchain/langgraph';
+import { BinaryOperatorAggregate, Annotation } from '@langchain/langgraph';
 import { AnnotationRoot } from '@langchain/langgraph/dist/graph';
 import { ChatOpenAI } from '@langchain/openai';
 
@@ -13,5 +13,3 @@ type AnalyticsAnnotationRoot = {
 };
 
 export type AnalyticsGraphStateType = AnnotationRoot<AnalyticsAnnotationRoot>;
-
-export type AnalyticsMainWorkflowStateType = StateType<AnalyticsAnnotationRoot>;

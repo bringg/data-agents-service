@@ -14,4 +14,4 @@ type SuperAnnotationRoot = {
 
 export type SuperGraphStateType = AnnotationRoot<SuperAnnotationRoot>;
 
-export type MainWorkflowStateType = StateType<SuperAnnotationRoot>;
+export type SuperWorkflowStateType = StateType<SuperAnnotationRoot>;
