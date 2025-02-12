@@ -28,7 +28,6 @@ export class AnalyticsSubGraph {
 		this.GraphState = Annotation.Root({
 			merchant_id: Annotation<number>,
 			user_id: Annotation<number>,
-			user_input: Annotation<string>,
 			messages: Annotation<BaseMessage[]>({
 				reducer: (x, y) => x.concat(y),
 				default: () => []
@@ -37,6 +36,10 @@ export class AnalyticsSubGraph {
 				// The routing key; defaults to END if not set
 				reducer: (state, update) => update ?? state ?? END,
 				default: () => END
+			}),
+			instructions: Annotation<string>({
+				reducer: (x, y) => y ?? x,
+				default: () => "Solve the human's question."
 			})
 		});
 	}

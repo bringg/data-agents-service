@@ -60,7 +60,6 @@ export class MainGraph {
 		this.GraphState = Annotation.Root({
 			merchant_id: Annotation<number>,
 			user_id: Annotation<number>,
-			user_input: Annotation<string>,
 			messages: Annotation<BaseMessage[]>({
 				reducer: (x, y) => x.concat(y),
 				default: () => []
@@ -69,6 +68,10 @@ export class MainGraph {
 				// The routing key; defaults to END if not set
 				reducer: (state, update) => update ?? state ?? END,
 				default: () => END
+			}),
+			instructions: Annotation<string>({
+				reducer: (x, y) => y ?? x,
+				default: () => "Resolve the user's request."
 			})
 		});
 	}
@@ -112,7 +115,6 @@ export class MainGraph {
 		const stream = mainGraph.stream(
 			{
 				messages: this.messages,
-				user_input: this.userInput,
 				merchant_id: this.merchantId,
 				user_id: this.userId
 			},

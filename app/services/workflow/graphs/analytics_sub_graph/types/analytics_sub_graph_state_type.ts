@@ -3,11 +3,11 @@ import { BinaryOperatorAggregate, StateType, Annotation } from '@langchain/langg
 import { AnnotationRoot } from '@langchain/langgraph/dist/graph';
 
 type AnalyticsAnnotationRoot = {
-	user_input: typeof Annotation<string>;
 	user_id: typeof Annotation<number>;
 	merchant_id: typeof Annotation<number>;
 	messages: BinaryOperatorAggregate<BaseMessage[], BaseMessage[]>;
 	next: BinaryOperatorAggregate<{}, unknown>;
+	instructions: BinaryOperatorAggregate<string, string>;
 };
 
 export type AnalyticsGraphStateType = AnnotationRoot<AnalyticsAnnotationRoot>;

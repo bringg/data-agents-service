@@ -5,6 +5,14 @@ import { ChatOpenAI } from '@langchain/openai';
 
 import { z } from 'zod';
 
+/**
+ * Create a team supervisor runnable that will select the next role in the team.
+ *
+ * @param llm - The ChatOpenAI instance to use.
+ * @param systemPrompt - The system prompt to use.
+ * @param members - The members to select from.
+ * @returns The team supervisor runnable.
+ */
 export const createTeamSupervisor = async (
 	llm: ChatOpenAI,
 	systemPrompt: string,

@@ -2,7 +2,10 @@ import { mainSupervisorMembers, mainSupervisorMembersDescription } from '../agen
 
 export const MAIN_SUPERVISOR_PROMPT = `You are a supervisor tasked with managing a conversation between the following
 workers: ${mainSupervisorMembers.join(', ')}. Given the following user request,
-please delegate the conversation to the appropriate worker by responding with it's name only.
-Guidelines for delegation:
+respond with the worker to act next. Each worker will perform a
+task and respond with their results and status. When finished,
+respond with FINISH.\n\n
+Select strategically to minimize the number of steps taken.
+Examples for delegation:
 ${mainSupervisorMembers.map(member => `${member}: ${mainSupervisorMembersDescription[member]}`).join('\n')} 
 `;
