@@ -1,20 +1,19 @@
 import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
 import { JsonOutputToolsParser } from '@langchain/core/output_parsers/openai_tools';
 import { Runnable } from '@langchain/core/runnables';
-import { ChatOpenAI } from '@langchain/openai';
-
+import { ChatAI } from '../../utils/llmFactory';
 import { z } from 'zod';
 
 /**
  * Create a team supervisor runnable that will select the next role in the team.
  *
- * @param llm - The ChatOpenAI instance to use.
+ * @param llm - The ChatAI instance to use.
  * @param systemPrompt - The system prompt to use.
  * @param members - The members to select from.
  * @returns The team supervisor runnable.
  */
 export const createTeamSupervisor = async (
-	llm: ChatOpenAI,
+	llm: ChatAI,
 	systemPrompt: string,
 	members: string[]
 ): Promise<Runnable> => {

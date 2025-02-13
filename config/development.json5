@@ -1,5 +1,10 @@
 {
   httpServer: {
     port: 3010,
-  }
+  },
+  	presto: {
+		hostname: 'localhost',
+		catalog: 'hive',
+		schema: 'default'
+	},
 }

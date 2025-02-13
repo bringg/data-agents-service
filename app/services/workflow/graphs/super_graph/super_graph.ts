@@ -5,7 +5,7 @@ import { IsRelevant } from '../../decorators';
 import { documentationAgent } from '../../agents';
 import { SuperGraphStateType } from './types';
 import { AnalyticsWorkflow } from '../analytics_sub_graph';
-import { ChatOpenAI } from '@langchain/openai';
+import { createLLM, LLMProvider, ChatAI } from '../../utils/llmFactory';
 import { createTeamSupervisor } from '../../agents/utils';
 import { MAIN_SUPERVISOR_PROMPT } from '../../prompts';
 import { SUPER_MEMBERS } from '../../agents/super_level_agents/constants';
@@ -43,14 +43,13 @@ export class SuperWorkflow {
 	private merchantId: number;
 	private userId: number;
 
-	private readonly llm = new ChatOpenAI({
-		apiKey: process.env.OPENAI_API_KEY,
-		modelName: 'gpt-4o-mini'
-	});
+	// Using the unified LLM instance
+  	private readonly llm: ChatAI;
+	
 
 	private GraphState: SuperGraphStateType;
 
-	constructor(userInput: string, threadId: string, response: Response, merchantId: number, userId: number) {
+	constructor(userInput: string, threadId: string, response: Response, merchantId: number, userId: number, llmProvider: LLMProvider = 'openai') {
 		this.messages = [new HumanMessage(userInput)];
 
 		this.threadId = threadId;
@@ -63,6 +62,9 @@ export class SuperWorkflow {
 		this.response.setHeader('Content-Type', 'text/event-stream');
 		this.response.setHeader('Cache-Control', 'no-cache');
 		this.response.setHeader('Connection', 'keep-alive');
+
+		// Create the unified LLM instance
+		this.llm = createLLM({ provider: llmProvider });
 
 		// Initialize GraphState
 		this.GraphState = Annotation.Root({
@@ -81,7 +83,7 @@ export class SuperWorkflow {
 				reducer: (x, y) => y ?? x,
 				default: () => "Resolve the user's request."
 			}),
-			llm: Annotation<ChatOpenAI>
+			llm: Annotation<ChatAI>
 		});
 	}
 

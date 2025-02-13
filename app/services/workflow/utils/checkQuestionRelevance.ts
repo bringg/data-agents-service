@@ -1,21 +1,15 @@
-import { ChatOpenAI } from '@langchain/openai';
 import { SEMANTIC_ROUTER_PROMPT } from '../prompts';
+import { ChatAI } from './llmFactory';
 
 /**
  *
  * @param question
  * @returns
  */
-export const checkQuestionRelevance = async (question: string): Promise<boolean> => {
-	const model = new ChatOpenAI({
-		apiKey: process.env.OPENAI_API_KEY,
-		modelName: 'gpt-4o-mini',
-		temperature: 0
-	});
-
+export const checkQuestionRelevance = async (question: string, llm: ChatAI): Promise<boolean> => {
 	const userPrompt = `Question: "${question}"\nResponse:`;
 
-	const response = await model.invoke([
+	const response = await llm.invoke([
 		{
 			role: 'system',
 			content: SEMANTIC_ROUTER_PROMPT

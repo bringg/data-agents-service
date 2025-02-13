@@ -50,8 +50,10 @@
 	},
 	"dependencies": {
 		"@bringg/service": "^3.35.1",
+		"@bringg/service-data": "^2.9.9",
 		"@bringg/service-utils": "^4.54.36",
 		"@langchain/core": "^0.3.38",
+		"@langchain/google-vertexai": "^0.1.8",
 		"@langchain/langgraph": "^0.2.44",
 		"@langchain/openai": "^0.4.3",
 		"uuid": "^11.0.5"

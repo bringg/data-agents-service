@@ -1,4 +1,5 @@
-import { checkQuestionRelevance } from '../logic';
+import { checkQuestionRelevance } from '../utils';
+import { ChatAI } from '../utils/llmFactory';
 
 /**
  * Decorator that checks if the first argument (assumed to be a question string)
@@ -11,8 +12,9 @@ export function IsRelevant(target: any, propertyKey: string, descriptor: Propert
 		// Retrieve the question from this.messages[0].content.
 		// Adjust this extraction based on your actual HumanMessage structure.
 		const question: string = this.userInput;
+		const llm: ChatAI = this.llm;
 
-		const relevance = await checkQuestionRelevance(question);
+		const relevance = await checkQuestionRelevance(question, llm);
 
 		if (!relevance) {
 			this.response.write(`data: Irrelevant question, skipping execution.\n\n`);

@@ -13,7 +13,6 @@
 			'./**/*_http_api.{ts,js}'
 		]
 	},
-
 	// airbrake configuration
 	airbrake: {
 		projectId: 581979,
