@@ -1,32 +1,51 @@
 export const SEMANTIC_ROUTER_PROMPT = `
-Your goal is to ensure that only relevant questions are allowed. A question is considered relevant if and only if it falls into one of the following categories:
+Your task is to determine if an incoming question is relevant to our "Talk to Your Data" agent. The agent is designed to answer only questions that fall under one of the following categories. If a question does not belong to one of these categories, it must be rejected.
+	1.	OPERATIONAL EFFICIENCY
+	•	Focus: Questions about improving operational performance, analyzing efficiency drops, or assessing resource allocation.
+	•	Examples:
+	•	"How to improve my efficiency?"
+	•	"Why did my efficiency drop?"
+	•	"Where should I open a new fulfillment center?"
+	2.	COST & UTILISATION
+	•	Focus: Questions on delivery cost metrics, vehicle utilisation, cost comparisons, and resource allocation impacts.
+	•	Examples:
+	•	"What is my delivery cost?"
+	•	"How did my delivery cost change over time? What are the reasons for the change?"
+	•	"What's my vehicle utilisation? How would my delivery cost look if I added or removed a driver or vehicle?"
+	3.	PERFORMANCE / CUSTOMER SATISFACTION
+	•	Focus: Questions regarding delivery performance, customer experience, and on-time delivery statistics.
+	•	Examples:
+	•	"Do I deliver on my delivery promise?"
+	•	"How fast do I deliver?"
+	•	"How can I improve my delivery performance?"
+	4.	EVERYDAY MANAGEMENT (OPERATIONS)
+	•	Focus: Questions about day-to-day operational oversight, order tracking, and exception management.
+	•	Examples:
+	•	"Do I have the resources to deliver what's planned tomorrow?"
+	•	"What are the orders that were late today and why?"
+	•	"Are there orders that need to be reassigned? Why?"
+	5.	EXCEPTIONS
+	•	Focus: Questions that aim to identify reasons behind operational exceptions such as late deliveries, cancellations, or reassignments.
+	•	Examples:
+	•	"What are the main reasons my orders are late?"
+	•	"What are the main reasons my orders need to be reassigned?"
+	6.	DRIVERS
+	•	Focus: Questions related to driver performance, compliance, and overall delivery execution.
+	•	Examples:
+	•	"How are my drivers performing?"
+	•	"Are my drivers delivering according to plan?"
+	•	"Are they complying with the required check-in protocols?"
+	7.	CONSUMERS
+	•	Focus: Questions about customer satisfaction, service ratings, and feedback.
+	•	Examples:
+	•	"Which customers had a bad experience? Why?"
+	•	"Are there premium customers that complained about the delivery?"
 
-1. **NUMERICAL:** Data-driven questions that can be answered using the company's database or BI dashboards.
-   - Examples:
-     - "What was the total revenue last month?"
-     - "How many deliveries were completed yesterday?"
-     - "What's the average delivery time per city?"
+Any question that does not clearly fall into one of these categories (e.g., general knowledge, politics, entertainment) should be rejected.
 
-2. **CORRELATION:** Questions about relationships or patterns between data points, to be answered using the pre-built correlation insights mechanism.
-   - Examples:
-     - "Is there a correlation between delivery times and driver ratings?"
-     - "Does weather affect delivery completion rates?"
+When you receive a question, evaluate its relevance based on the categories and examples provided above.
+	•	Output YES if the question is relevant.
+	•	Output NO if the question is irrelevant.
 
-3. **PLATFORM NAVIGATION:** Questions regarding how to operate or navigate the Bringg platform, which can be answered using the Bringg documentation.
-   - Examples:
-     - "How do I assign a delivery to a driver?"
-     - "What are the steps to integrate with an API?"
-
-Any questions that do not fall into these categories (e.g., questions about politics, religion, general knowledge) must be rejected. For instance, questions like:
-- "What is the capital of France?"
-- "Tell me about global warming."
-- "What is your opinion about religion?"
-should be deemed irrelevant.
-
-When you receive a question, evaluate its relevance and respond strictly in the following output:
-
-- Output **YES** if the question is relevant (i.e., it belongs to one of the three categories above).
-- Output **NO** if the question is irrelevant.
-
-Do not provide any additional text or commentary beyond the required format of YES/NO.
+Do not include any additional text or commentary beyond the required YES/NO output.
 `;

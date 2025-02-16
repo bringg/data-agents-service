@@ -3,67 +3,30 @@ import { Annotation, StateGraph, START, END, StreamMode } from '@langchain/langg
 import { Response } from 'express';
 import { IsRelevant } from '../../decorators';
 import { documentationAgent } from '../../agents';
-import { SuperGraphStateType } from './types';
+import { CompiledSuperWorkflowType, SuperGraphStateType } from './types';
 import { AnalyticsWorkflow } from '../analytics_sub_graph';
 import { ChatOpenAI } from '@langchain/openai';
 import { createTeamSupervisor } from '../../agents/utils';
 import { MAIN_SUPERVISOR_PROMPT } from '../../prompts';
 import { SUPER_MEMBERS } from '../../agents/super_level_agents/constants';
+import { humanNode } from '../../agents/human_node';
+import { v4 as uuidv4 } from 'uuid';
+import { RedisSaver } from '../../memory/short-term';
+import redis from '@bringg/service/lib/redis';
 
-/**
- * The `SuperWorkflow` class is responsible for managing the workflow of the entire agents system.
- * It initializes with user input, a thread ID, and an HTTP response object.
- * The class sets up Server-Sent Events (SSE) headers for the response and provides
- * a method to stream graph events back to the client.
- *
- * @class
- * @param {string} userInput - The input provided by the user.
- * @param {string} threadId - The unique identifier for the thread.
- * @param {Response} response - The HTTP response object.
- *
- * @property {Object} options - Configuration options for the workflow.
- * @property {number} options.recursionLimit - The limit for recursion.
- * @property {'v1' | 'v2'} options.version - The version of the workflow.
- * @property {BaseMessage[]} messages - The list of messages in the workflow.
- * @property {string} threadId - The unique identifier for the thread.
- * @property {Response} response - The HTTP response object.
- *
- * @method streamGraph
- * @description Creates and compiles a StateGraph with nodes and edges,
- * then streams events from the graph, logging each event and eventually ending the response.
- * @returns {Promise<void>} A promise that resolves when the streaming is complete.
- */
 export class SuperWorkflow {
-	private readonly options = { recursionLimit: 15, streamMode: 'debug' as StreamMode, subgraphs: true };
-	private messages: BaseMessage[] = [];
+	private readonly options = { recursionLimit: 15, subgraphs: true };
 
-	private userInput: string;
-	private threadId: string;
-	private response: Response;
-	private merchantId: number;
-	private userId: number;
-
-	private readonly llm = new ChatOpenAI({
+	public static readonly llm = new ChatOpenAI({
 		apiKey: process.env.OPENAI_API_KEY,
 		modelName: 'gpt-4o-mini'
 	});
 
-	private GraphState: SuperGraphStateType;
+	private static superGraph: CompiledSuperWorkflowType;
+	private static checkpointer: RedisSaver;
+	private static GraphState: SuperGraphStateType;
 
-	constructor(userInput: string, threadId: string, response: Response, merchantId: number, userId: number) {
-		this.messages = [new HumanMessage(userInput)];
-
-		this.threadId = threadId;
-		this.response = response;
-		this.userInput = userInput;
-		this.merchantId = merchantId;
-		this.userId = userId;
-
-		// Set SSE headers
-		this.response.setHeader('Content-Type', 'text/event-stream');
-		this.response.setHeader('Cache-Control', 'no-cache');
-		this.response.setHeader('Connection', 'keep-alive');
-
+	public static async initialize() {
 		// Initialize GraphState
 		this.GraphState = Annotation.Root({
 			merchant_id: Annotation<number>,
@@ -80,13 +43,13 @@ export class SuperWorkflow {
 			instructions: Annotation<string>({
 				reducer: (x, y) => y ?? x,
 				default: () => "Resolve the user's request."
-			}),
-			llm: Annotation<ChatOpenAI>
+			})
+			// llm: Annotation<ChatOpenAI>
 		});
-	}
 
-	@IsRelevant
-	public async streamGraph(): Promise<void> {
+		// Create checkpointer
+		this.checkpointer = new RedisSaver({ connection: redis.cache });
+
 		// Create super graph supervisor
 		const supervisorAgent = await createTeamSupervisor(this.llm, MAIN_SUPERVISOR_PROMPT, SUPER_MEMBERS);
 
@@ -95,40 +58,59 @@ export class SuperWorkflow {
 		const analyticsSubGraph = await analyticsWorkflow.createAnalyticsGraph();
 
 		// Create and compile the graph
-		const superGraph = new StateGraph(this.GraphState)
+		this.superGraph = new StateGraph(this.GraphState)
 			.addNode('AnalyticsTeam', analyticsSubGraph)
 			.addNode('Documentation', documentationAgent)
 			.addNode('Supervisor', supervisorAgent)
+			.addNode('HumanNode', humanNode)
 			.addEdge('AnalyticsTeam', 'Supervisor')
 			.addEdge('Documentation', 'Supervisor')
+			.addEdge('HumanNode', 'Supervisor')
 			.addConditionalEdges('Supervisor', (x: any) => x.next, {
 				AnalyticsTeam: 'AnalyticsTeam',
 				Documentation: 'Documentation',
+				HumanNode: 'HumanNode',
 				FINISH: END
 			})
 			.addEdge(START, 'Supervisor')
-			.compile();
+			.compile({ checkpointer: this.checkpointer });
+	}
 
-		const stream = await superGraph.stream(
+	@IsRelevant
+	public async streamGraph(
+		response: Response,
+		userInput: string,
+		merchantId: number,
+		userId: number,
+		threadId: string = uuidv4()
+	): Promise<void> {
+		//Set SSE headers
+		response.setHeader('Content-Type', 'text/event-stream');
+		response.setHeader('Cache-Control', 'no-cache');
+		response.setHeader('Connection', 'keep-alive');
+
+		const stream = await SuperWorkflow.superGraph.stream(
 			{
-				messages: this.messages,
-				merchant_id: this.merchantId,
-				user_id: this.userId,
-				llm: this.llm
+				messages: [new HumanMessage({ content: userInput })],
+				merchant_id: merchantId,
+				user_id: userId
 			},
-			this.options
+			{ ...this.options, configurable: { thread_id: threadId } }
 		);
 
 		// Extract graph events and stream them back
+		response.write(`data: ${threadId}\n\n`);
+
 		for await (const chunk of stream) {
-			const typedChunk = chunk as any[];
-			console.log('Graph: ' + typedChunk[0]);
-			console.log(typedChunk[1].type);
-			console.log(typedChunk[1].payload?.result);
+			console.log(chunk[1]);
+			if (Object.keys(chunk[1])[0] === '__interrupt__') {
+				response.write(`data: ${chunk[1].__interrupt__[0].value}\n\n`);
+			}
 			console.log('\n====\n');
-			//this.response.write(chunk)
 		}
 
-		this.response.end();
+		response.end();
 	}
 }
+
+export const workflow = new SuperWorkflow();

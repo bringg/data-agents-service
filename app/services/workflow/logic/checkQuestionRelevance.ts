@@ -26,8 +26,6 @@ export const checkQuestionRelevance = async (question: string): Promise<boolean>
 		}
 	]);
 
-	console.log(response);
-
 	if (typeof response.content === 'string') {
 		return response.content.includes('YES');
 	}

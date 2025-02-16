@@ -28,8 +28,7 @@ export class AnalyticsWorkflow {
 			instructions: Annotation<string>({
 				reducer: (x, y) => y ?? x,
 				default: () => "Solve the human's question."
-			}),
-			llm: Annotation<ChatOpenAI>
+			})
 		});
 
 		this.llm = llm;
@@ -53,8 +52,8 @@ export class AnalyticsWorkflow {
 					return x.next;
 				},
 				{
-					BiDashboardsAgent: 'BiDashboards',
-					ReportsAgent: 'Reports',
+					BiDashboards: 'BiDashboards',
+					Reports: 'Reports',
 					FINISH: END
 				}
 			)
