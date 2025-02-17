@@ -9,7 +9,7 @@ import { createLLM, LLMProvider, ChatAI } from '../../utils/llmFactory';
 import { createTeamSupervisor } from '../../agents/utils';
 import { MAIN_SUPERVISOR_PROMPT } from '../../prompts';
 import { SUPER_MEMBERS } from '../../agents/super_level_agents/constants';
-import { getUserProfile } from '../../utils/getUserProfile';
+
 
 /**
  * The `SuperWorkflow` class is responsible for managing the workflow of the entire agents system.
