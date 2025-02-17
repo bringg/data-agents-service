@@ -22,7 +22,7 @@ export function createLLM(options: LLMFactoryOptions = {}): ChatOpenAI | ChatVer
 
   if (provider === 'vertexai') {
     return new ChatVertexAI({
-      model: model || 'gemini-1.5-flash',
+      model: model || 'gemini-2.0-flash',
       temperature: temperature ?? 0.2,
     });
   }

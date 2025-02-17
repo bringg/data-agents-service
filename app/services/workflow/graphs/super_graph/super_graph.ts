@@ -9,6 +9,7 @@ import { createLLM, LLMProvider, ChatAI } from '../../utils/llmFactory';
 import { createTeamSupervisor } from '../../agents/utils';
 import { MAIN_SUPERVISOR_PROMPT } from '../../prompts';
 import { SUPER_MEMBERS } from '../../agents/super_level_agents/constants';
+import { getUserProfile } from '../../utils/getUserProfile';
 
 /**
  * The `SuperWorkflow` class is responsible for managing the workflow of the entire agents system.
@@ -49,7 +50,7 @@ export class SuperWorkflow {
 
 	private GraphState: SuperGraphStateType;
 
-	constructor(userInput: string, threadId: string, response: Response, merchantId: number, userId: number, llmProvider: LLMProvider = 'openai') {
+	constructor(userInput: string, threadId: string, response: Response, merchantId: number, userId: number, llmProvider: LLMProvider = 'vertexai') {
 		this.messages = [new HumanMessage(userInput)];
 
 		this.threadId = threadId;
@@ -89,6 +90,8 @@ export class SuperWorkflow {
 
 	@IsRelevant
 	public async streamGraph(): Promise<void> {
+
+		//console.log(await getUserProfile());
 		// Create super graph supervisor
 		const supervisorAgent = await createTeamSupervisor(this.llm, MAIN_SUPERVISOR_PROMPT, SUPER_MEMBERS);
 
