@@ -1,5 +1,5 @@
-import { ChatOpenAI } from '@langchain/openai';
 import { SEMANTIC_ROUTER_PROMPT } from '../prompts';
+import { createLLM } from './llm_factory.utils';
 
 /**
  *
@@ -7,11 +7,7 @@ import { SEMANTIC_ROUTER_PROMPT } from '../prompts';
  * @returns
  */
 export const checkQuestionRelevance = async (question: string): Promise<boolean> => {
-	const model = new ChatOpenAI({
-		apiKey: process.env.OPENAI_API_KEY,
-		modelName: 'gpt-4o-mini',
-		temperature: 0
-	});
+	const model = createLLM({ provider: 'vertexai', model: 'gemini-1.5-pro' });
 
 	const userPrompt = `Question: "${question}"\nResponse:`;
 

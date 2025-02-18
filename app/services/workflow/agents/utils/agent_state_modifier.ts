@@ -29,5 +29,6 @@ export const agentStateModifier = (
 			'\n\nEnd if you have already completed the requested task. Communicate the work completed.'
 	);
 
-	return (state: typeof MessagesAnnotation.State): any[] => [systemMsgStart, ...state.messages, systemMsgEnd];
+	//TODO - find a generic way to use the systemMsgEnd
+	return (state: typeof MessagesAnnotation.State): any[] => [systemMsgStart, ...state.messages];
 };

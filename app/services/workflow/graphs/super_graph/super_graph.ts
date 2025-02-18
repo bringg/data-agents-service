@@ -5,7 +5,6 @@ import { IsRelevant } from '../../decorators';
 import { documentationAgent } from '../../agents';
 import { CompiledSuperWorkflowType, SuperGraphStateType } from './types';
 import { AnalyticsWorkflow } from '../analytics_sub_graph';
-import { ChatOpenAI } from '@langchain/openai';
 import { createTeamSupervisor } from '../../agents/utils';
 import { MAIN_SUPERVISOR_PROMPT } from '../../prompts';
 import { SUPER_MEMBERS } from '../../agents/super_level_agents/constants';
@@ -13,14 +12,12 @@ import { humanNode } from '../../agents/human_node';
 import { v4 as uuidv4 } from 'uuid';
 import { RedisSaver } from '../../memory/short-term';
 import redis from '@bringg/service/lib/redis';
+import { createLLM } from '../../utils';
 
 export class SuperWorkflow {
 	private readonly options = { recursionLimit: 15, subgraphs: true };
 
-	public static readonly llm = new ChatOpenAI({
-		apiKey: process.env.OPENAI_API_KEY,
-		modelName: 'gpt-4o-mini'
-	});
+	public static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-1.5-pro-002' });
 
 	private static superGraph: CompiledSuperWorkflowType;
 	private static checkpointer: RedisSaver;
@@ -44,7 +41,6 @@ export class SuperWorkflow {
 				reducer: (x, y) => y ?? x,
 				default: () => "Resolve the user's request."
 			})
-			// llm: Annotation<ChatOpenAI>
 		});
 
 		// Create checkpointer
@@ -102,9 +98,12 @@ export class SuperWorkflow {
 		response.write(`data: ${threadId}\n\n`);
 
 		for await (const chunk of stream) {
-			console.log(chunk[1]);
+			console.log(chunk[1]['tools'] ? chunk[1]['tools']['messages'][0] : chunk[1]);
 			if (Object.keys(chunk[1])[0] === '__interrupt__') {
 				response.write(`data: ${chunk[1].__interrupt__[0].value}\n\n`);
+			}
+			if (chunk[1]?.['Reports']?.['messages']) {
+				response.write(`data: ${chunk[1]['Reports']['messages'][0]['content']}\n\n`);
 			}
 			console.log('\n====\n');
 		}

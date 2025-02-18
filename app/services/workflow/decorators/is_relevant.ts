@@ -1,4 +1,4 @@
-import { checkQuestionRelevance } from '../logic';
+import { checkQuestionRelevance } from '../utils';
 import { Response } from 'express';
 
 /**
