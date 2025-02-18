@@ -12,10 +12,13 @@ import { Runnable } from '@langchain/core/runnables';
 
 export const runAgentNode = async (params: { state: any; agent: Runnable; name: string }) => {
 	const { state, agent, name } = params;
+
 	const result = await agent.invoke({
 		messages: state.messages
 	});
+
 	const lastMessage = result.messages[result.messages.length - 1];
+
 	return {
 		messages: [new HumanMessage({ content: lastMessage.content, name })]
 	};

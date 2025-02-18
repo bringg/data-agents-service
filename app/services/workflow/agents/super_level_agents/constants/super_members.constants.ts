@@ -1,4 +1,4 @@
-export const SUPER_MEMBERS = ['Documentation', 'AnalyticsTeam'];
+export const SUPER_MEMBERS = ['Documentation', 'AnalyticsTeam', 'HumanNode'];
 
 export const SUPER_MEMBERS_DESCRIPTION = {
 	Documentation: `Questions regarding how to operate or navigate the Bringg platform, which can be answered using the Bringg documentation.
@@ -9,6 +9,10 @@ export const SUPER_MEMBERS_DESCRIPTION = {
    - Examples:
      - "What was the total revenue last month?"
      - "How many deliveries were completed yesterday?"
-     - "What's the average delivery time per city?"
-  `
+     - "List Teams/Drivers/Deliveries metrics/metadata."
+     - "What's the average delivery time per city?"`,
+	HumanNode: `Questions that require human intervention, such as those that are:
+    - Too complex for the other members.
+    - Require a human touch.
+    - Needs clarification or further information.`
 } as { [key in (typeof SUPER_MEMBERS)[number]]: string };

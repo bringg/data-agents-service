@@ -1,5 +1,5 @@
 export const REPORTS_BUILDER_AGENT_PROMPT = `Provides access to Bringg’s Reports Builder service for querying analytics data.
-Use this tool to:
+You may use your tools to:
 	1.	Fetch analytics metadata (all available cubes, measures, dimensions).
 	2.	Run custom analytics queries with filters, dimensions, and measures.
 
