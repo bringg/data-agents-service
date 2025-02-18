@@ -1,16 +1,17 @@
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
-import { AnalyticsGraphStateType } from '../../graphs/analytics_sub_graph/types';
+import { AnalyticsWorkflowStateType } from '../../graphs/analytics_sub_graph/types';
 import { REPORTS_BUILDER_AGENT_PROMPT } from '../../prompts';
-import { reportsBuilderTool } from '../../tools';
 import { agentStateModifier, runAgentNode } from '../utils';
 import { ANALYTICS_MEMBERS } from './constants';
+import { SuperWorkflow } from '../../graphs/super_graph';
+import { loadTool, metaTool } from '../../tools';
 
-export const reportsAgent = (state: AnalyticsGraphStateType) => {
-	const stateModifier = agentStateModifier(REPORTS_BUILDER_AGENT_PROMPT, [reportsBuilderTool], ANALYTICS_MEMBERS);
-	const biDashboardsReactAgent = createReactAgent({
-		llm: state.State.llm,
-		tools: [reportsBuilderTool],
+export const reportsAgent = (state: AnalyticsWorkflowStateType) => {
+	const stateModifier = agentStateModifier(REPORTS_BUILDER_AGENT_PROMPT, [metaTool, loadTool], ANALYTICS_MEMBERS);
+	const reportsReactAgent = createReactAgent({
+		llm: SuperWorkflow.llm,
+		tools: [metaTool, loadTool],
 		stateModifier
 	});
-	return runAgentNode({ state, agent: biDashboardsReactAgent, name: 'Reports' });
+	return runAgentNode({ state, agent: reportsReactAgent, name: 'Reports' });
 };

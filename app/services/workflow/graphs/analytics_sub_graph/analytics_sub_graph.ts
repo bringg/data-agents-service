@@ -3,15 +3,15 @@ import { Annotation, StateGraph, START, END } from '@langchain/langgraph';
 import { biDashboardsAgent, reportsAgent } from '../../agents';
 import { AnalyticsGraphStateType } from './types';
 import { ANALYTICS_MEMBERS } from '../../agents/analytics_level_agents/constants';
-import { ChatOpenAI } from '@langchain/openai';
 import { ANALYTICS_SUPERVISOR_PROMPT } from '../../prompts';
 import { createTeamSupervisor } from '../../agents/utils';
+import { ChatAI } from '../../types';
 
 export class AnalyticsWorkflow {
 	private GraphState: AnalyticsGraphStateType;
-	private llm: ChatOpenAI;
+	private llm: ChatAI;
 
-	constructor(llm: ChatOpenAI) {
+	constructor(llm: ChatAI) {
 		// Initialize GraphState
 		this.GraphState = Annotation.Root({
 			merchant_id: Annotation<number>,
@@ -28,8 +28,7 @@ export class AnalyticsWorkflow {
 			instructions: Annotation<string>({
 				reducer: (x, y) => y ?? x,
 				default: () => "Solve the human's question."
-			}),
-			llm: Annotation<ChatOpenAI>
+			})
 		});
 
 		this.llm = llm;
@@ -46,18 +45,11 @@ export class AnalyticsWorkflow {
 			.addNode('AnalyticsSupervisor', supervisorAgent)
 			.addEdge('BiDashboards', 'AnalyticsSupervisor')
 			.addEdge('BiDashboards', 'AnalyticsSupervisor')
-			.addConditionalEdges(
-				'AnalyticsSupervisor',
-				(x: any) => {
-					console.log(x);
-					return x.next;
-				},
-				{
-					BiDashboardsAgent: 'BiDashboards',
-					ReportsAgent: 'Reports',
-					FINISH: END
-				}
-			)
+			.addConditionalEdges('AnalyticsSupervisor', (x: any) => x.next, {
+				BiDashboards: 'BiDashboards',
+				Reports: 'Reports',
+				FINISH: END
+			})
 			.addEdge(START, 'AnalyticsSupervisor')
 			.compile();
 
