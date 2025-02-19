@@ -32,6 +32,7 @@ export const loadTool = tool(
 			query: z.object({
 				measures: z.array(z.string()).optional(),
 				dimensions: z.array(z.string()).optional(),
+				// TODO - solve recursive schema
 				// filters: z.array(FilterSchema).optional(),
 				// timeDimensions: z
 				// 	.array(

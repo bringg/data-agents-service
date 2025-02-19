@@ -22,8 +22,7 @@ export function IsRelevant(target: any, propertyKey: string, descriptor: Propert
 			response.setHeader('Cache-Control', 'no-cache');
 			response.setHeader('Connection', 'keep-alive');
 
-			response.statusCode = 418;
-			response.write('event: error\n');
+			response.write('event: Non-Relevant\n');
 			response.write(
 				`data: I'm Sorry, it's seems like your question isn't Bringg related. Try asking me another question!\n\n`
 			);

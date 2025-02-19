@@ -25,8 +25,7 @@ export const agentStateModifier = (
 			` You are chosen for a reason! You are one of the following team members: ${teamMembers.join(', ')}.
 			  Remember, you individually can only use these tools: ${toolNames}.
 			  n\nEnd only if you have already completed the requested task or you were given a wrong task. 
-			  Communicate the work completed.
-			`
+			  Communicate the work completed.`
 	);
 
 	return (state: typeof MessagesAnnotation.State): any[] => [systemMsgStart, ...state.messages];
