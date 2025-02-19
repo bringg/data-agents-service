@@ -12,7 +12,7 @@ export const metaTool = tool(
 				'Content-Type': 'application/json'
 			}
 		});
-		console.log(response.status);
+
 		if (!response.ok) {
 			throw new Error(`HTTP error! status: ${response.status}`);
 		}

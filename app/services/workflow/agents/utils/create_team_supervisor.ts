@@ -11,9 +11,15 @@ import { ChatAI } from '../../types';
  * @param llm - The ChatAI instance to use.
  * @param systemPrompt - The system prompt to use.
  * @param members - The members to select from.
+ * @param hasEndSystemMsg - Whether to include the end system message (OpenAI supports trailing system msgs).
  * @returns The team supervisor runnable.
  */
-export const createTeamSupervisor = async (llm: ChatAI, systemPrompt: string, members: string[]): Promise<Runnable> => {
+export const createTeamSupervisor = async (
+	llm: ChatAI,
+	systemPrompt: string,
+	members: string[],
+	hasEndSystemMsg?: boolean
+): Promise<Runnable> => {
 	const options = ['FINISH', ...members];
 
 	const routeTool = {
@@ -31,13 +37,15 @@ export const createTeamSupervisor = async (llm: ChatAI, systemPrompt: string, me
 	// TODO - find a generic way to use the other message
 	const prompt = ChatPromptTemplate.fromMessages([
 		['system', systemPrompt],
-		new MessagesPlaceholder('messages')
-		// ... llm.modelName ?[
-		// 	'system',
-		// 	`Given the conversation above, who should act next? Or should we FINISH? Select one of: ${options.join(
-		// 		', '
-		// 	)}`
-		// ]: []
+		new MessagesPlaceholder('messages'),
+		...(hasEndSystemMsg
+			? [
+					'system',
+					`Given the conversation above, who should act next? Or should we FINISH? Select one of: ${options.join(
+						', '
+					)}`
+			  ]
+			: [])
 	]);
 
 	const supervisor = prompt

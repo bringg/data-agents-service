@@ -2,8 +2,8 @@ import { BaseMessage, HumanMessage } from '@langchain/core/messages';
 import { Annotation, StateGraph, START, END, StreamMode } from '@langchain/langgraph';
 import { Response } from 'express';
 import { IsRelevant } from '../../decorators';
-import { documentationAgent } from '../../agents';
-import { CompiledSuperWorkflowType, SuperGraphStateType } from './types';
+import { composerAgent, documentationAgent } from '../../agents';
+import { CompiledSuperWorkflowType, SuperGraphStateType, SuperWorkflowStateType } from './types';
 import { AnalyticsWorkflow } from '../analytics_sub_graph';
 import { createTeamSupervisor } from '../../agents/utils';
 import { MAIN_SUPERVISOR_PROMPT } from '../../prompts';
@@ -13,11 +13,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { RedisSaver } from '../../memory/short-term';
 import redis from '@bringg/service/lib/redis';
 import { createLLM } from '../../utils';
+import { RunnableLambda } from '@langchain/core/runnables';
+import { StatusCodes } from 'http-status-codes';
 
 export class SuperWorkflow {
-	private readonly options = { recursionLimit: 15, subgraphs: true };
+	private readonly options = { recursionLimit: 15, subgraphs: true, streamMode: 'messages' as StreamMode };
 
-	public static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-1.5-pro-002' });
+	public static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
 
 	private static superGraph: CompiledSuperWorkflowType;
 	private static checkpointer: RedisSaver;
@@ -47,28 +49,46 @@ export class SuperWorkflow {
 		this.checkpointer = new RedisSaver({ connection: redis.cache });
 
 		// Create super graph supervisor
-		const supervisorAgent = await createTeamSupervisor(this.llm, MAIN_SUPERVISOR_PROMPT, SUPER_MEMBERS);
+		const supervisorAgent = await createTeamSupervisor(
+			// Only gpt-4o right now has an option to push system message
+			// at the end of it's input, it's necessary for FINISH
+			createLLM({ model: 'gpt-4o-mini', provider: 'openai' }),
+			MAIN_SUPERVISOR_PROMPT,
+			SUPER_MEMBERS,
+			true
+		);
 
 		// Create analytics chain
 		const analyticsWorkflow = new AnalyticsWorkflow(this.llm);
 		const analyticsSubGraph = await analyticsWorkflow.createAnalyticsGraph();
 
+		const getMessages = RunnableLambda.from((state: SuperWorkflowStateType) => {
+			return { messages: state.messages };
+		});
+
+		const joinGraph = RunnableLambda.from((response: any) => {
+			return {
+				messages: [response.messages[response.messages.length - 1]]
+			};
+		});
+
 		// Create and compile the graph
 		this.superGraph = new StateGraph(this.GraphState)
-			.addNode('AnalyticsTeam', analyticsSubGraph)
+			.addNode('AnalyticsTeam', getMessages.pipe(analyticsSubGraph).pipe(joinGraph), {})
 			.addNode('Documentation', documentationAgent)
 			.addNode('Supervisor', supervisorAgent)
 			.addNode('HumanNode', humanNode)
+			.addNode('Composer', composerAgent)
 			.addEdge('AnalyticsTeam', 'Supervisor')
 			.addEdge('Documentation', 'Supervisor')
-			.addEdge('HumanNode', 'Supervisor')
 			.addConditionalEdges('Supervisor', (x: any) => x.next, {
 				AnalyticsTeam: 'AnalyticsTeam',
 				Documentation: 'Documentation',
 				HumanNode: 'HumanNode',
-				FINISH: END
+				FINISH: 'Composer'
 			})
 			.addEdge(START, 'Supervisor')
+			.addEdge('Composer', END)
 			.compile({ checkpointer: this.checkpointer });
 	}
 
@@ -94,18 +114,23 @@ export class SuperWorkflow {
 			{ ...this.options, configurable: { thread_id: threadId } }
 		);
 
-		// Extract graph events and stream them back
-		response.write(`data: ${threadId}\n\n`);
+		response.write(`id: ${threadId}\n`);
+		response.write(`event: Response\n`);
 
-		for await (const chunk of stream) {
-			console.log(chunk[1]['tools'] ? chunk[1]['tools']['messages'][0] : chunk[1]);
-			if (Object.keys(chunk[1])[0] === '__interrupt__') {
-				response.write(`data: ${chunk[1].__interrupt__[0].value}\n\n`);
+		// Extract graph events and stream them back
+
+		try {
+			for await (const [_, metadata] of stream) {
+				if (metadata[1]?.langgraph_node === 'Composer' || metadata[1]?.langgraph_node === 'HumanNode') {
+					response.write(`data: ${metadata[0].content} \n\n`);
+				}
 			}
-			if (chunk[1]?.['Reports']?.['messages']) {
-				response.write(`data: ${chunk[1]['Reports']['messages'][0]['content']}\n\n`);
-			}
-			console.log('\n====\n');
+		} catch (e) {
+			console.error(e);
+			response.status(StatusCodes.INTERNAL_SERVER_ERROR);
+			response.write(`event: Error\n`);
+			// TODO - const dict of default messages
+			response.write(`data: Sorry, it seems like I encountered a problem. Let's try again! \n\n`);
 		}
 
 		response.end();

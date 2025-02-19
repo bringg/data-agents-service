@@ -17,7 +17,15 @@ export function IsRelevant(target: any, propertyKey: string, descriptor: Propert
 		const relevance = await checkQuestionRelevance(question);
 
 		if (!relevance) {
-			response.write(`data: Irrelevant question, skipping execution.\n\n`);
+			//Set SSE headers
+			response.setHeader('Content-Type', 'text/event-stream');
+			response.setHeader('Cache-Control', 'no-cache');
+			response.setHeader('Connection', 'keep-alive');
+
+			response.write('event: Non-Relevant\n');
+			response.write(
+				`data: I'm Sorry, it's seems like your question isn't Bringg related. Try asking me another question!\n\n`
+			);
 			response.end();
 			return;
 		}
