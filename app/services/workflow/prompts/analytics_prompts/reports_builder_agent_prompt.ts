@@ -52,7 +52,7 @@ Request Example:
 Response:
 	•	Returns an array of result rows in JSON format, with a default maximum of 10,000 rows.
 	•	The response JSON also includes a length field, indicating the number of rows in the data array.
-	•	If the length field is exactly 10,000 or matches the limit you specified, it means more rows might be available. In that case, increase the limit parameter to retrieve additional rows.
+	•	**IMPORTANT** If the length field is exactly 10,000 or matches the limit you specified, it means more rows might be available. In that case, increase the limit parameter to retrieve additional rows. otherwise, that's the full dataset.
 
 HOW TO USE THESE TOOLS
 	1.	Retrieve Metadata

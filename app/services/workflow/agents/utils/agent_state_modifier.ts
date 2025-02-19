@@ -3,7 +3,7 @@ import { StructuredToolInterface } from '@langchain/core/tools';
 import { MessagesAnnotation } from '@langchain/langgraph';
 
 /**
- * Modifies the state of the agent by adding a system message at the beginning and end of the messages.
+ * Modifies the state of the agent by adding a system message at the beginning of the messages.
  *
  * @param systemPrompt - The prompt to be displayed in the system messages.
  * @param tools - The tools available to the agent.
@@ -17,16 +17,17 @@ export const agentStateModifier = (
 ): ((state: typeof MessagesAnnotation.State) => BaseMessage[]) => {
 	const toolNames = tools.map(t => t.name).join(', ');
 
-	const systemMsgStart = new SystemMessage(
+	const systemMsg = new SystemMessage(
 		systemPrompt +
 			'\nWork autonomously according to your specialty, using the tools available to you.' +
 			' Do not ask for clarification.' +
 			' Your other team members (and other teams) will collaborate with you with their own specialties.' +
 			` You are chosen for a reason! You are one of the following team members: ${teamMembers.join(', ')}.
 			  Remember, you individually can only use these tools: ${toolNames}.
-			  n\nEnd only if you have already completed the requested task or you were given a wrong task. 
+			  n\nEnd only if you have already completed the requested task, were given a wrong task or you don't have the
+			  necessary knowledge in order to provide the answer. 
 			  Communicate the work completed.`
 	);
 
-	return (state: typeof MessagesAnnotation.State): any[] => [systemMsgStart, ...state.messages];
+	return (state: typeof MessagesAnnotation.State): any[] => [systemMsg, ...state.messages];
 };

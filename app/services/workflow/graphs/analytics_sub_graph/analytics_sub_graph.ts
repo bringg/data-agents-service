@@ -7,6 +7,7 @@ import { ANALYTICS_SUPERVISOR_PROMPT } from '../../prompts';
 import { createTeamSupervisor } from '../../agents/utils';
 import { ChatAI } from '../../types';
 import { RunnableLambda } from '@langchain/core/runnables';
+import { createLLM } from '../../utils';
 
 export class AnalyticsWorkflow {
 	private GraphState: AnalyticsGraphStateType;
@@ -28,7 +29,7 @@ export class AnalyticsWorkflow {
 			}),
 			instructions: Annotation<string>({
 				reducer: (x, y) => y ?? x,
-				default: () => "Solve the human's question."
+				default: () => "Solve the user's question."
 			})
 		});
 
@@ -37,7 +38,12 @@ export class AnalyticsWorkflow {
 
 	public async createAnalyticsGraph() {
 		// Create graph supervisor
-		const supervisorAgent = await createTeamSupervisor(this.llm, ANALYTICS_SUPERVISOR_PROMPT, ANALYTICS_MEMBERS);
+		const supervisorAgent = await createTeamSupervisor(
+			createLLM({ model: 'gpt-4o-mini', provider: 'openai' }),
+			ANALYTICS_SUPERVISOR_PROMPT,
+			ANALYTICS_MEMBERS,
+			true
+		);
 
 		// Create and compile the graph
 		const analyticsGraph = new StateGraph(this.GraphState)
@@ -45,7 +51,7 @@ export class AnalyticsWorkflow {
 			.addNode('Reports', reportsAgent)
 			.addNode('AnalyticsSupervisor', supervisorAgent)
 			.addEdge('BiDashboards', 'AnalyticsSupervisor')
-			.addEdge('BiDashboards', 'AnalyticsSupervisor')
+			.addEdge('Reports', 'AnalyticsSupervisor')
 			.addConditionalEdges('AnalyticsSupervisor', (x: any) => x.next, {
 				BiDashboards: 'BiDashboards',
 				Reports: 'Reports',

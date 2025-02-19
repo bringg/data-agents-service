@@ -5,12 +5,11 @@ import { agentStateModifier, runAgentNode } from '../utils';
 import { ANALYTICS_MEMBERS } from './constants';
 import { SuperWorkflow } from '../../graphs/super_graph';
 import { loadTool, metaTool } from '../../tools';
-import { createLLM } from '../../utils';
 
 export const reportsAgent = (state: AnalyticsWorkflowStateType) => {
 	const stateModifier = agentStateModifier(REPORTS_BUILDER_AGENT_PROMPT, [metaTool, loadTool], ANALYTICS_MEMBERS);
 	const reportsReactAgent = createReactAgent({
-		llm: createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' }),
+		llm: SuperWorkflow.llm,
 		tools: [metaTool, loadTool],
 		stateModifier
 	});

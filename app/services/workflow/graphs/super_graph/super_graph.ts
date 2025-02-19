@@ -50,7 +50,9 @@ export class SuperWorkflow {
 
 		// Create super graph supervisor
 		const supervisorAgent = await createTeamSupervisor(
-			createLLM({ model: 'gpt-4o', provider: 'openai' }),
+			// Only gpt-4o right now has an option to push system message
+			// at the end of it's input, it's necessary for FINISH
+			createLLM({ model: 'gpt-4o-mini', provider: 'openai' }),
 			MAIN_SUPERVISOR_PROMPT,
 			SUPER_MEMBERS,
 			true
@@ -79,7 +81,6 @@ export class SuperWorkflow {
 			.addNode('Composer', composerAgent)
 			.addEdge('AnalyticsTeam', 'Supervisor')
 			.addEdge('Documentation', 'Supervisor')
-			.addEdge('HumanNode', 'Supervisor')
 			.addConditionalEdges('Supervisor', (x: any) => x.next, {
 				AnalyticsTeam: 'AnalyticsTeam',
 				Documentation: 'Documentation',
@@ -128,6 +129,7 @@ export class SuperWorkflow {
 			console.error(e);
 			response.status(StatusCodes.INTERNAL_SERVER_ERROR);
 			response.write(`event: Error\n`);
+			// TODO - const dict of default messages
 			response.write(`data: Sorry, it seems like I encountered a problem. Let's try again! \n\n`);
 		}
 
