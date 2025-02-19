@@ -6,6 +6,7 @@ import { ANALYTICS_MEMBERS } from '../../agents/analytics_level_agents/constants
 import { ANALYTICS_SUPERVISOR_PROMPT } from '../../prompts';
 import { createTeamSupervisor } from '../../agents/utils';
 import { ChatAI } from '../../types';
+import { RunnableLambda } from '@langchain/core/runnables';
 
 export class AnalyticsWorkflow {
 	private GraphState: AnalyticsGraphStateType;
@@ -50,9 +51,15 @@ export class AnalyticsWorkflow {
 				Reports: 'Reports',
 				FINISH: END
 			})
-			.addEdge(START, 'AnalyticsSupervisor')
-			.compile();
+			.addEdge(START, 'AnalyticsSupervisor');
 
-		return analyticsGraph;
+		const enterAnalyticsChain = RunnableLambda.from(({ messages }: { messages: BaseMessage[] }) => {
+			return {
+				messages: messages,
+				team_members: ANALYTICS_MEMBERS
+			};
+		});
+
+		return enterAnalyticsChain.pipe(analyticsGraph.compile());
 	}
 }

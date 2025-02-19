@@ -7,7 +7,7 @@ import { createLLM } from './llm_factory.utils';
  * @returns
  */
 export const checkQuestionRelevance = async (question: string): Promise<boolean> => {
-	const model = createLLM({ provider: 'vertexai', model: 'gemini-1.5-pro' });
+	const model = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash-thinking-exp-01-21' });
 
 	const userPrompt = `Question: "${question}"\nResponse:`;
 
