@@ -4,9 +4,8 @@ import { throwProblem, ReqValidator } from '@bringg/service';
 import { newChatRules, continueChatRules } from './validation/chat_validation';
 import { StatusCodes } from 'http-status-codes';
 
-import { v4 as uuidv4 } from 'uuid';
 import { ContinueChatDto, NewChatDto } from './types';
-import { SuperWorkflow } from '../../services/workflow/graphs/super_graph';
+import { workflow } from '../../services/workflow/graphs/super_graph';
 
 @Path('/chat')
 // @Security('*', 'bringg-jwt')
@@ -19,7 +18,7 @@ export class ChatController {
 	@PreProcessor(ReqValidator.validate(newChatRules))
 	/**
 	 * POST /chat
-	 * Creates a new chat thread with a unique ID and the current user ID.
+	 * Creates a new chat thread.
 	 */
 	public async newChat({ initialMessage }: NewChatDto) {
 		const { merchantId, userId } = this.context.request.user || {};
@@ -28,20 +27,9 @@ export class ChatController {
 		// 	throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
 		// }
 
-		const threadId = uuidv4();
-
 		//TODO - store in redis for POC [userId : {threadId, initialMessage}]
 		//TODO - store in pg for long-term
-
-		const superGraph = new SuperWorkflow(
-			initialMessage,
-			threadId,
-			this.context.response,
-			userId as number, // remove
-			merchantId as number // remove
-		);
-
-		await superGraph.streamGraph();
+		await workflow.streamGraph(this.context.response, initialMessage, merchantId as number, userId as number);
 	}
 
 	@Path(`/:threadId`)
@@ -49,30 +37,15 @@ export class ChatController {
 	@PreProcessor(ReqValidator.validate(continueChatRules))
 	/**
 	 * POST /chat/:id
-	 * Continues a given chat thread by:
-	 *  - Retrieving existing messages
-	 *  - Running them + the new message through the graph
-	 *  - Storing the new user message and the LLM response
-	 *  - Returning the latest response
+	 * Continues a given chat thread by threadId.
 	 */
 	public async continueChat(@PathParam('threadId') threadId: string, { message }: ContinueChatDto) {
-		//     const userId = this.context.request.user?.userId;
-		//     // 1) Retrieve existing conversation
-		//     const existingMessages = await db.getChatMessages(threadId);
-		//     const conversationText = existingMessages.map((m) => m.message).join('\n');
-		//     // 2) Combine with the new user message
-		//     const fullInput = `${conversationText}\nUser: ${message}`;
-		//     // 3) Start the graph from greetNode
-		//     //    We pass the combined text in. The result will come from openAiNode at the end.
-		//     const result = await graph.start(fullInput, greetNode);
-		//     // 4) Store the user's message
-		//     await db.insertChatMessage(threadId, userId, message, 'user');
-		//     // 5) Store the system/LLM response
-		//     await db.insertChatMessage(threadId, null, result, 'system');
-		//     return res.json({ response: result });
-		//   } catch (error) {
-		//     console.error('Error continuing chat:', error);
-		//     return res.status(500).json({ error: error.message });
-		//   }
+		const { merchantId, userId } = this.context.request.user || {};
+
+		// if (!userId || !merchantId) {
+		// 	throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
+		// }
+
+		await workflow.streamGraph(this.context.response, message, merchantId as number, userId as number, threadId);
 	}
 }

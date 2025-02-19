@@ -1,24 +1,24 @@
 {
-  logger: {
-    logstash: {
-      metadata: {
-        qaenv_id: "QAENV",
-      }
-    }
-  },
+	logger: {
+		logstash: {
+			metadata: {
+				qaenv_id: 'QAENV'
+			}
+		}
+	},
 
-  database: {
-    main:{
-      connection: {
-        host: "PGHOST",
-        user: "PGUSER",
-        password: "PGPASSWORD",
-        database: "PGDATABASE",
-      },
-    }
-  },
+	database: {
+		main: {
+			connection: {
+				host: 'PGHOST',
+				user: 'PGUSER',
+				password: 'PGPASSWORD',
+				database: 'PGDATABASE'
+			}
+		}
+	},
 
-  jwt: {
+	jwt: {
 		internalSignKey: 'BRINGG_JWT_SIGN_KEY_INTERNAL'
 	}
 }

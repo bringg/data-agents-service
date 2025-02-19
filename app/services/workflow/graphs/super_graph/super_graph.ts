@@ -2,68 +2,30 @@ import { BaseMessage, HumanMessage } from '@langchain/core/messages';
 import { Annotation, StateGraph, START, END, StreamMode } from '@langchain/langgraph';
 import { Response } from 'express';
 import { IsRelevant } from '../../decorators';
-import { documentationAgent } from '../../agents';
-import { SuperGraphStateType } from './types';
+import { composerAgent, documentationAgent } from '../../agents';
+import { CompiledSuperWorkflowType, SuperGraphStateType, SuperWorkflowStateType } from './types';
 import { AnalyticsWorkflow } from '../analytics_sub_graph';
-import { ChatOpenAI } from '@langchain/openai';
 import { createTeamSupervisor } from '../../agents/utils';
 import { MAIN_SUPERVISOR_PROMPT } from '../../prompts';
-import { SUPER_MEMBERS } from '../../agents/main_agents/constants';
+import { SUPER_MEMBERS } from '../../agents/super_level_agents/constants';
+import { humanNode } from '../../agents/human_node';
+import { v4 as uuidv4 } from 'uuid';
+import { RedisSaver } from '../../memory/short-term';
+import redis from '@bringg/service/lib/redis';
+import { createLLM } from '../../utils';
+import { RunnableLambda } from '@langchain/core/runnables';
+import { StatusCodes } from 'http-status-codes';
 
-/**
- * The `SuperWorkflow` class is responsible for managing the workflow of the entire agents system.
- * It initializes with user input, a thread ID, and an HTTP response object.
- * The class sets up Server-Sent Events (SSE) headers for the response and provides
- * a method to stream graph events back to the client.
- *
- * @class
- * @param {string} userInput - The input provided by the user.
- * @param {string} threadId - The unique identifier for the thread.
- * @param {Response} response - The HTTP response object.
- *
- * @property {Object} options - Configuration options for the workflow.
- * @property {number} options.recursionLimit - The limit for recursion.
- * @property {'v1' | 'v2'} options.version - The version of the workflow.
- * @property {BaseMessage[]} messages - The list of messages in the workflow.
- * @property {string} threadId - The unique identifier for the thread.
- * @property {Response} response - The HTTP response object.
- *
- * @method streamGraph
- * @description Creates and compiles a StateGraph with nodes and edges,
- * then streams events from the graph, logging each event and eventually ending the response.
- * @returns {Promise<void>} A promise that resolves when the streaming is complete.
- */
 export class SuperWorkflow {
-	private readonly options = { recursionLimit: 15, /**streamMode: 'updates' as StreamMode,*/ subgraphs: true };
-	private messages: BaseMessage[] = [];
+	private readonly options = { recursionLimit: 15, subgraphs: true, streamMode: 'messages' as StreamMode };
 
-	private userInput: string;
-	private threadId: string;
-	private response: Response;
-	private merchantId: number;
-	private userId: number;
+	public static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
 
-	private readonly llm = new ChatOpenAI({
-		apiKey: process.env.OPENAI_API_KEY,
-		modelName: 'gpt-4o-mini'
-	});
+	private static superGraph: CompiledSuperWorkflowType;
+	private static checkpointer: RedisSaver;
+	private static GraphState: SuperGraphStateType;
 
-	private GraphState: SuperGraphStateType;
-
-	constructor(userInput: string, threadId: string, response: Response, merchantId: number, userId: number) {
-		this.messages = [new HumanMessage(userInput)];
-
-		this.threadId = threadId;
-		this.response = response;
-		this.userInput = userInput;
-		this.merchantId = merchantId;
-		this.userId = userId;
-
-		// Set SSE headers
-		this.response.setHeader('Content-Type', 'text/event-stream');
-		this.response.setHeader('Cache-Control', 'no-cache');
-		this.response.setHeader('Connection', 'keep-alive');
-
+	public static async initialize() {
 		// Initialize GraphState
 		this.GraphState = Annotation.Root({
 			merchant_id: Annotation<number>,
@@ -74,57 +36,105 @@ export class SuperWorkflow {
 			}),
 			next: Annotation({
 				// The routing key; defaults to END if not set
-				reducer: (state, update) => update ?? state ?? END,
-				default: () => END
+				reducer: (state, update) => update ?? state,
+				default: () => 'Documentation'
 			}),
 			instructions: Annotation<string>({
 				reducer: (x, y) => y ?? x,
 				default: () => "Resolve the user's request."
-			}),
-			llm: Annotation<ChatOpenAI>
+			})
 		});
-	}
 
-	@IsRelevant
-	public async streamGraph(): Promise<void> {
-		// Create main graph supervisor
-		const supervisorAgent = await createTeamSupervisor(this.llm, MAIN_SUPERVISOR_PROMPT, SUPER_MEMBERS);
+		// Create checkpointer
+		this.checkpointer = new RedisSaver({ connection: redis.cache });
+
+		// Create super graph supervisor
+		const supervisorAgent = await createTeamSupervisor(
+			// Only gpt-4o right now has an option to push system message
+			// at the end of it's input, it's necessary for FINISH
+			createLLM({ model: 'gpt-4o-mini', provider: 'openai' }),
+			MAIN_SUPERVISOR_PROMPT,
+			SUPER_MEMBERS,
+			true
+		);
 
 		// Create analytics chain
 		const analyticsWorkflow = new AnalyticsWorkflow(this.llm);
 		const analyticsSubGraph = await analyticsWorkflow.createAnalyticsGraph();
 
+		const getMessages = RunnableLambda.from((state: SuperWorkflowStateType) => {
+			return { messages: state.messages };
+		});
+
+		const joinGraph = RunnableLambda.from((response: any) => {
+			return {
+				messages: [response.messages[response.messages.length - 1]]
+			};
+		});
+
 		// Create and compile the graph
-		const mainGraph = new StateGraph(this.GraphState)
-			.addNode('AnalyticsTeam', analyticsSubGraph)
+		this.superGraph = new StateGraph(this.GraphState)
+			.addNode('AnalyticsTeam', getMessages.pipe(analyticsSubGraph).pipe(joinGraph), {})
 			.addNode('Documentation', documentationAgent)
-			.addNode('MainSupervisor', supervisorAgent)
-			.addEdge(START, 'MainSupervisor')
-			.addEdge('AnalyticsTeam', 'MainSupervisor')
-			.addEdge('Documentation', 'MainSupervisor')
-			.addConditionalEdges('MainSupervisor', (x: any) => x.next, {
+			.addNode('Supervisor', supervisorAgent)
+			.addNode('HumanNode', humanNode)
+			.addNode('Composer', composerAgent)
+			.addEdge('AnalyticsTeam', 'Supervisor')
+			.addEdge('Documentation', 'Supervisor')
+			.addConditionalEdges('Supervisor', (x: any) => x.next, {
 				AnalyticsTeam: 'AnalyticsTeam',
 				Documentation: 'Documentation',
-				FINISH: END
+				HumanNode: 'HumanNode',
+				FINISH: 'Composer'
 			})
-			.compile();
+			.addEdge(START, 'Supervisor')
+			.addEdge('Composer', END)
+			.compile({ checkpointer: this.checkpointer });
+	}
 
-		const stream = await mainGraph.stream(
+	@IsRelevant
+	public async streamGraph(
+		response: Response,
+		userInput: string,
+		merchantId: number,
+		userId: number,
+		threadId: string = uuidv4()
+	): Promise<void> {
+		//Set SSE headers
+		response.setHeader('Content-Type', 'text/event-stream');
+		response.setHeader('Cache-Control', 'no-cache');
+		response.setHeader('Connection', 'keep-alive');
+
+		const stream = await SuperWorkflow.superGraph.stream(
 			{
-				messages: this.messages,
-				merchant_id: this.merchantId,
-				user_id: this.userId
+				messages: [new HumanMessage({ content: userInput })],
+				merchant_id: merchantId,
+				user_id: userId
 			},
-			this.options
+			{ ...this.options, configurable: { thread_id: threadId } }
 		);
 
+		response.write(`id: ${threadId}\n`);
+		response.write(`event: Response\n`);
+
 		// Extract graph events and stream them back
-		for await (const chunk of stream) {
-			console.log(chunk);
-			console.log('\n====\n');
-			//this.response.write(chunk)
+
+		try {
+			for await (const [_, metadata] of stream) {
+				if (metadata[1]?.langgraph_node === 'Composer' || metadata[1]?.langgraph_node === 'HumanNode') {
+					response.write(`data: ${metadata[0].content} \n\n`);
+				}
+			}
+		} catch (e) {
+			console.error(e);
+			response.status(StatusCodes.INTERNAL_SERVER_ERROR);
+			response.write(`event: Error\n`);
+			// TODO - const dict of default messages
+			response.write(`data: Sorry, it seems like I encountered a problem. Let's try again! \n\n`);
 		}
 
-		this.response.end();
+		response.end();
 	}
 }
+
+export const workflow = new SuperWorkflow();

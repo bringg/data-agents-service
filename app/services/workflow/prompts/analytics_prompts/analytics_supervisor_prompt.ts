@@ -1,4 +1,4 @@
-import { ANALYTICS_MEMBERS, ANALYTICS_MEMBERS_DESCRIPTION } from '../../agents/analytics_agents/constants';
+import { ANALYTICS_MEMBERS, ANALYTICS_MEMBERS_DESCRIPTION } from '../../agents/analytics_level_agents/constants';
 
 export const ANALYTICS_SUPERVISOR_PROMPT = `You are a supervisor tasked with managing a conversation between the following
 workers: ${ANALYTICS_MEMBERS.join(', ')}. Given the following user request,

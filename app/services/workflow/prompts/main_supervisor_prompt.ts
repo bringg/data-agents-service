@@ -1,4 +1,4 @@
-import { SUPER_MEMBERS, SUPER_MEMBERS_DESCRIPTION } from '../agents/main_agents/constants';
+import { SUPER_MEMBERS, SUPER_MEMBERS_DESCRIPTION } from '../agents/super_level_agents/constants';
 
 export const MAIN_SUPERVISOR_PROMPT = `You are a supervisor tasked with managing a conversation between the following
 workers: ${SUPER_MEMBERS.join(', ')}. Given the following user request,

@@ -1,22 +1,24 @@
 import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
 import { JsonOutputToolsParser } from '@langchain/core/output_parsers/openai_tools';
 import { Runnable } from '@langchain/core/runnables';
-import { ChatOpenAI } from '@langchain/openai';
 
 import { z } from 'zod';
+import { ChatAI } from '../../types';
 
 /**
  * Create a team supervisor runnable that will select the next role in the team.
  *
- * @param llm - The ChatOpenAI instance to use.
+ * @param llm - The ChatAI instance to use.
  * @param systemPrompt - The system prompt to use.
  * @param members - The members to select from.
+ * @param hasEndSystemMsg - Whether to include the end system message (OpenAI supports trailing system msgs).
  * @returns The team supervisor runnable.
  */
 export const createTeamSupervisor = async (
-	llm: ChatOpenAI,
+	llm: ChatAI,
 	systemPrompt: string,
-	members: string[]
+	members: string[],
+	hasEndSystemMsg?: boolean
 ): Promise<Runnable> => {
 	const options = ['FINISH', ...members];
 
@@ -32,15 +34,18 @@ export const createTeamSupervisor = async (
 		})
 	};
 
+	// TODO - find a generic way to use the other message
 	const prompt = ChatPromptTemplate.fromMessages([
 		['system', systemPrompt],
 		new MessagesPlaceholder('messages'),
-		[
-			'system',
-			`Given the conversation above, who should act next? Or should we FINISH? Select one of: ${options.join(
-				', '
-			)}`
-		]
+		...(hasEndSystemMsg
+			? [
+					'system',
+					`Given the conversation above, who should act next? Or should we FINISH? Select one of: ${options.join(
+						', '
+					)}`
+			  ]
+			: [])
 	]);
 
 	const supervisor = prompt
