@@ -7,7 +7,7 @@ import { ANALYTICS_SUPERVISOR_PROMPT } from '../../prompts';
 import { createTeamSupervisor } from '../../agents/utils';
 import { ChatAI } from '../../types';
 import { RunnableLambda } from '@langchain/core/runnables';
-import { createLLM } from '../../utils';
+import { SuperWorkflow } from '../super_graph';
 
 export class AnalyticsWorkflow {
 	private GraphState: AnalyticsGraphStateType;
@@ -39,10 +39,9 @@ export class AnalyticsWorkflow {
 	public async createAnalyticsGraph() {
 		// Create graph supervisor
 		const supervisorAgent = await createTeamSupervisor(
-			createLLM({ model: 'gpt-4o-mini', provider: 'openai' }),
+			SuperWorkflow.supervisorLLM,
 			ANALYTICS_SUPERVISOR_PROMPT,
-			ANALYTICS_MEMBERS,
-			true
+			ANALYTICS_MEMBERS
 		);
 
 		// Create and compile the graph

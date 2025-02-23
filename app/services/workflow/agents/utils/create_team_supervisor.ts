@@ -4,6 +4,7 @@ import { Runnable } from '@langchain/core/runnables';
 
 import { z } from 'zod';
 import { ChatAI } from '../../types';
+import { HumanMessage } from '@langchain/core/messages';
 
 /**
  * Create a team supervisor runnable that will select the next role in the team.
@@ -11,15 +12,9 @@ import { ChatAI } from '../../types';
  * @param llm - The ChatAI instance to use.
  * @param systemPrompt - The system prompt to use.
  * @param members - The members to select from.
- * @param hasEndSystemMsg - Whether to include the end system message (OpenAI supports trailing system msgs).
  * @returns The team supervisor runnable.
  */
-export const createTeamSupervisor = async (
-	llm: ChatAI,
-	systemPrompt: string,
-	members: string[],
-	hasEndSystemMsg?: boolean
-): Promise<Runnable> => {
+export const createTeamSupervisor = async (llm: ChatAI, systemPrompt: string, members: string[]): Promise<Runnable> => {
 	const options = ['FINISH', ...members];
 
 	const routeTool = {
@@ -34,32 +29,33 @@ export const createTeamSupervisor = async (
 		})
 	};
 
-	// TODO - find a generic way to use the other message
 	const prompt = ChatPromptTemplate.fromMessages([
 		['system', systemPrompt],
 		new MessagesPlaceholder('messages'),
-		...(hasEndSystemMsg
-			? [
-					'system',
-					`Given the conversation above, who should act next? Or should we FINISH? Select one of: ${options.join(
-						', '
-					)}`
-			  ]
-			: [])
+		new HumanMessage('system'),
+		new HumanMessage(
+			`Given the conversation above, who should act next? Or should we FINISH? Select one of: ${options.join(
+				', '
+			)}`
+		)
 	]);
 
 	const supervisor = prompt
+		// Bind the route tool to the LLM
 		.pipe(
 			llm.bindTools([routeTool], {
 				tool_choice: 'route'
 			})
 		)
+		// Parse the output
 		.pipe(new JsonOutputToolsParser())
-		// select the first one
-		.pipe((x: any) => ({
-			next: x[0].args.next,
-			instructions: x[0].args.instructions
-		}));
+		// Extract the next role and instructions
+		.pipe(async (x: any) => {
+			return {
+				next: x[0].args.next,
+				instructions: x[0].args.instructions
+			};
+		});
 
 	return supervisor;
 };

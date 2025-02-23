@@ -1,26 +1,26 @@
+import { BaseMessage, SystemMessage } from '@langchain/core/messages';
 import { SEMANTIC_ROUTER_PROMPT } from '../prompts';
-import { createLLM } from './llm_factory.utils';
+import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
+import { SuperWorkflow } from '../graphs/super_graph';
 
 /**
- *
+ * Check if a question is relevant to the current conversation context.
  * @param question
  * @returns
  */
-export const checkQuestionRelevance = async (question: string): Promise<boolean> => {
-	const model = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
+export const checkQuestionRelevance = async (messages: BaseMessage[]): Promise<boolean> => {
+	const model = SuperWorkflow.llm;
 
-	const userPrompt = `Question: "${question}"\nResponse:`;
-
-	const response = await model.invoke([
-		{
-			role: 'system',
-			content: SEMANTIC_ROUTER_PROMPT
-		},
-		{
-			role: 'user',
-			content: userPrompt
-		}
+	const prompt = ChatPromptTemplate.fromMessages([
+		['system', SEMANTIC_ROUTER_PROMPT],
+		new MessagesPlaceholder('messages')
 	]);
+
+	const formattedPrompt = await prompt.formatMessages({
+		messages
+	});
+
+	const response = await model.invoke(formattedPrompt);
 
 	if (typeof response.content === 'string') {
 		return response.content.includes('YES');

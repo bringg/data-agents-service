@@ -7,6 +7,8 @@ type SuperAnnotationRoot = {
 	user_id: typeof Annotation<number>;
 	merchant_id: typeof Annotation<number>;
 	messages: BinaryOperatorAggregate<BaseMessage[], BaseMessage[]>;
+	// conversation messages consists of messages that only the user can see
+	conversation_messages: BinaryOperatorAggregate<BaseMessage[], BaseMessage[]>;
 	next: BinaryOperatorAggregate<{}, unknown>;
 	instructions: BinaryOperatorAggregate<string, string>;
 };
