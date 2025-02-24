@@ -1,0 +1,12 @@
+#
+# Default values for all environments!
+# Should be used with per env value files
+#
+createService: true
+
+owner: data
+
+service:
+  endpoints:
+  - path: /data-agents-service
+    stripPath: true
