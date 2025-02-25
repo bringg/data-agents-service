@@ -1,9 +1,10 @@
 import { tool } from '@langchain/core/tools';
+import { config } from '@bringg/service';
 
 export const metaTool = tool(
 	async () => {
 		const url = 'https://us2-admin-api.bringg.com/analytics-service/v1/query-engine/own-fleet/presto/meta';
-		const jwt = '';
+		const jwt = config.get('jwt');
 
 		const response = await fetch(url, {
 			method: 'GET',

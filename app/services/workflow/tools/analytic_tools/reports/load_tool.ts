@@ -1,11 +1,12 @@
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { QueryZodSchema } from './schemas/load_tool_schemas';
+import { config } from '@bringg/service';
 
 export const loadTool = tool(
 	async input => {
 		const url = 'https://us2-admin-api.bringg.com/analytics-service/v1/query-engine/own-fleet/presto/load';
-		const jwt = '';
+		const jwt = config.get('jwt');
 
 		const response = await fetch(url, {
 			method: 'POST',
