@@ -1,9 +1,8 @@
 import { z } from 'zod';
-import { WidgetDataFilter } from '@bringg/types';
 
-export const filterSchema: z.ZodType<WidgetDataFilter> = z.object({
-	comparison: z.tuple([z.string(), z.string()]).optional(),
-	dates: z.tuple([z.string(), z.string()]),
+export const filterSchema: z.ZodType = z.object({
+	comparison: z.array(z.string()).length(2).optional(),
+	dates: z.array(z.string()).length(2),
 	teams: z.array(z.string()).optional(),
 	parents: z.array(z.string()).optional(),
 	drivers: z.array(z.string()).optional(),

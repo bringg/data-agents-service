@@ -1,13 +1,13 @@
+//! NO HTTP ENDPOINT
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { config } from '@bringg/service';
 import { filterSchema } from './schemas';
-import { WidgetType } from '@bringg/types';
+import { GroupBy, TimeGranularity, WidgetType } from '@bringg/types';
 
-export const widgetTypeBarDataTool = tool(
+export const widgetTypePieDataTool = tool(
 	async input => {
-		const { widgetCatalogId, ...body } = input;
-		const url = `https://us2-admin-api.bringg.com/analytics-service/v1/parent-app/own-fleet/dashboards/widget-type/${WidgetType.BarChart}/widgets-catalog-id/${widgetCatalogId}/get-data`;
+		const url = `https://us2-admin-api.bringg.com/analytics-service/v1/parent-app/own-fleet/dashboards/widget-type/${WidgetType.PieChart}/widgets-catalog-id/${input.widgetCatalogId}/get-data`;
 		const jwt = config.get('analyticsJWT');
 
 		const response = await fetch(url, {
@@ -16,7 +16,7 @@ export const widgetTypeBarDataTool = tool(
 				Authorization: `Bearer ${jwt}`,
 				'Content-Type': 'application/json'
 			},
-			body: JSON.stringify(body)
+			body: JSON.stringify(input)
 		});
 
 		if (!response.ok) {
@@ -28,9 +28,9 @@ export const widgetTypeBarDataTool = tool(
 		return data;
 	},
 	{
-		name: 'widget_type_bar_data_tool',
+		name: 'widget_type_pie_data_tool',
 		description:
-			'Fetches analytics data for a specific widget catalog item (presented as a bar chart) using filters, grouping, and time granularity as needed.',
+			'Fetches analytics data for a specific widget catalog item (presented as a pie chart) using filters, grouping, and time granularity as needed.',
 		schema: z.object({
 			widgetCatalogId: z.number(),
 			filter: filterSchema,

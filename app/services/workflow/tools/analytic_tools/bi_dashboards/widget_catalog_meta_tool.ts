@@ -23,7 +23,7 @@ const getDescriptionsDict = async () => {
 export const widgetCatalogMetaTool = tool(
 	async () => {
 		const url = 'https://us2-admin-api.bringg.com/analytics-service/v1/dashboards/widgets-catalog-items';
-		const jwt = config.get('jwt');
+		const jwt = config.get('analyticsJWT');
 
 		const response = await fetch(url, {
 			method: 'GET',
@@ -32,7 +32,6 @@ export const widgetCatalogMetaTool = tool(
 				'Content-Type': 'application/json'
 			}
 		});
-
 		if (!response.ok) {
 			throw new Error(`HTTP error! status: ${response.status}`);
 		}
@@ -45,7 +44,7 @@ export const widgetCatalogMetaTool = tool(
 			defaultDescription: descriptionsDict[item.defaultDescription]
 		}));
 
-		return populatedDescriptionData;
+		return { data: populatedDescriptionData };
 	},
 	{
 		name: 'widget_catalog_meta_tool',

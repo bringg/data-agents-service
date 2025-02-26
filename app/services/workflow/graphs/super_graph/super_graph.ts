@@ -16,6 +16,8 @@ import { createLLM } from '../../utils';
 import { RunnableLambda } from '@langchain/core/runnables';
 import { StatusCodes } from 'http-status-codes';
 import { ERRORS } from '../../../../common';
+import { logger } from '@bringg/service';
+import { GRAPH_STATUS_DESCRIPTION } from './constants';
 
 export class SuperWorkflow {
 	private readonly options = { recursionLimit: 15, subgraphs: true, streamMode: 'messages' as StreamMode };
@@ -127,21 +129,27 @@ export class SuperWorkflow {
 			{ ...this.options, configurable: { thread_id: threadId, user: userId } }
 		);
 
-		response.write(`id: ${threadId}\n`);
-		response.write(`event: Response\n`);
-
 		// Extract graph events and stream them back
 		try {
+			let prevNode = '';
 			for await (const [_, metadata] of stream) {
-				const node = metadata[1]?.langgraph_node;
+				const node = metadata[1]?.langgraph_node as string;
+				const graphStatus = GRAPH_STATUS_DESCRIPTION[node];
+				if (graphStatus && prevNode !== node) {
+					prevNode = node;
+					response.write(`event: Status\n`);
+					response.write(`data: ${graphStatus} \n\n`);
+				}
 
 				if ((node === 'Composer' || node === 'HumanNode') && isAIMessageChunk(metadata[0])) {
-					console.log(metadata);
+					logger.info('Streaming AI message', { message: metadata[0].content });
+					response.write(`id: ${threadId}\n`);
+					response.write(`event: Response\n`);
 					response.write(`data: ${metadata[0].content} \n\n`);
 				}
 			}
 		} catch (e) {
-			console.error(e);
+			logger.error('Error streaming graph', { error: e });
 			response.status(StatusCodes.INTERNAL_SERVER_ERROR);
 			response.write(`event: Error\n`);
 			response.write(`data: ${ERRORS.STREAM_ERROR} \n\n`);

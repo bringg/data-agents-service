@@ -6,7 +6,7 @@ import { config } from '@bringg/service';
 export const loadTool = tool(
 	async input => {
 		const url = 'https://us2-admin-api.bringg.com/analytics-service/v1/query-engine/own-fleet/presto/load';
-		const jwt = config.get('jwt');
+		const jwt = config.get('analyticsJWT');
 
 		const response = await fetch(url, {
 			method: 'POST',

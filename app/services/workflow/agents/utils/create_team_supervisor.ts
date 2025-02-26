@@ -14,7 +14,7 @@ import { HumanMessage } from '@langchain/core/messages';
  * @param members - The members to select from.
  * @returns The team supervisor runnable.
  */
-export const createTeamSupervisor = async (llm: ChatAI, systemPrompt: string, members: string[]): Promise<Runnable> => {
+export const createTeamSupervisor = async (llm: ChatAI, systemPrompt: string, members: any[]): Promise<Runnable> => {
 	const options = ['FINISH', ...members];
 
 	const routeTool = {

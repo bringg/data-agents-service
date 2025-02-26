@@ -1,13 +1,15 @@
+// filepath: /Users/yahav.levy/Projects/data-agents-service/app/services/workflow/tools/analytic_tools/bi_dashboards/widget_type_reversed_bar_data_tool.ts
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { config } from '@bringg/service';
 import { filterSchema } from './schemas';
-import { WidgetType } from '@bringg/types';
+import { GroupBy, TimeGranularity, WidgetType } from '@bringg/types';
 
-export const widgetTypeBarDataTool = tool(
+export const widgetTypeReversedBarDataTool = tool(
 	async input => {
 		const { widgetCatalogId, ...body } = input;
-		const url = `https://us2-admin-api.bringg.com/analytics-service/v1/parent-app/own-fleet/dashboards/widget-type/${WidgetType.BarChart}/widgets-catalog-id/${widgetCatalogId}/get-data`;
+
+		const url = `https://us2-admin-api.bringg.com/analytics-service/v1/parent-app/own-fleet/dashboards/widget-type/${WidgetType.ReversedBarChart}/widgets-catalog-id/${widgetCatalogId}/get-data`;
 		const jwt = config.get('analyticsJWT');
 
 		const response = await fetch(url, {
@@ -28,17 +30,15 @@ export const widgetTypeBarDataTool = tool(
 		return data;
 	},
 	{
-		name: 'widget_type_bar_data_tool',
+		name: 'widget_type_reversed_bar_data_tool',
 		description:
-			'Fetches analytics data for a specific widget catalog item (presented as a bar chart) using filters, grouping, and time granularity as needed.',
+			'Fetches analytics data for a specific widget catalog item (presented as a reversed bar chart) using filters, grouping, and time granularity as needed.',
 		schema: z.object({
 			widgetCatalogId: z.number(),
 			filter: filterSchema,
 			timezone: z.string(),
-			useTimeDimension: z.boolean(),
 			groupBy: z.number().int().min(0).max(10).optional(),
-			stackedBy: z.number().int().min(0).max(10).optional(),
-			granularity: z.number().int().min(0).max(3).optional()
+			stackedBy: z.number().int().min(0).max(10).optional()
 		})
 	}
 );
