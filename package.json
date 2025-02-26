@@ -51,7 +51,7 @@
 	},
 	"dependencies": {
 		"@bringg/service": "^3.35.1",
-		"@bringg/service-utils": "^4.54.36",
+		"@bringg/service-utils": "^4.55.0",
 		"@bringg/types": "^4.184.9",
 		"@langchain/core": "^0.3.38",
 		"@langchain/google-vertexai": "^0.1.8",
