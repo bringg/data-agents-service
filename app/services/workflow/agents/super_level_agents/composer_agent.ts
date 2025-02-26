@@ -1,9 +1,12 @@
+import { HumanMessage } from '@langchain/core/messages';
 import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
+
 import { SuperWorkflow, SuperWorkflowStateType } from '../../graphs/super_graph';
 import { COMPOSER_AGENT_PROMPT } from '../../prompts';
-import { HumanMessage } from '@langchain/core/messages';
 
-export const composerAgent = async (state: SuperWorkflowStateType) => {
+export const composerAgent = async (
+	state: SuperWorkflowStateType
+): Promise<{ conversation_messages: HumanMessage[] }> => {
 	const prompt = ChatPromptTemplate.fromMessages([
 		['system', COMPOSER_AGENT_PROMPT],
 		new MessagesPlaceholder('messages')

@@ -1,10 +1,10 @@
-import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
-import { JsonOutputToolsParser } from '@langchain/core/output_parsers/openai_tools';
-import { Runnable } from '@langchain/core/runnables';
-
-import { z } from 'zod';
-import { ChatAI } from '../../types';
 import { HumanMessage } from '@langchain/core/messages';
+import { JsonOutputToolsParser, ParsedToolCall } from '@langchain/core/output_parsers/openai_tools';
+import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
+import { Runnable } from '@langchain/core/runnables';
+import { z } from 'zod';
+
+import { ChatAI } from '../../types';
 
 /**
  * Create a team supervisor runnable that will select the next role in the team.
@@ -14,7 +14,7 @@ import { HumanMessage } from '@langchain/core/messages';
  * @param members - The members to select from.
  * @returns The team supervisor runnable.
  */
-export const createTeamSupervisor = async (llm: ChatAI, systemPrompt: string, members: any[]): Promise<Runnable> => {
+export const createTeamSupervisor = async (llm: ChatAI, systemPrompt: string, members: string[]): Promise<Runnable> => {
 	const options = ['FINISH', ...members];
 
 	const routeTool = {
@@ -50,7 +50,7 @@ export const createTeamSupervisor = async (llm: ChatAI, systemPrompt: string, me
 		// Parse the output
 		.pipe(new JsonOutputToolsParser())
 		// Extract the next role and instructions
-		.pipe(async (x: any) => {
+		.pipe(async (x: ParsedToolCall[]) => {
 			return {
 				next: x[0].args.next,
 				instructions: x[0].args.instructions

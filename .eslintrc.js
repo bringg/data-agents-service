@@ -42,7 +42,9 @@ module.exports = {
 					'error',
 					{
 						ignoreRestSiblings: true,
-						argsIgnorePattern: '^_'
+						argsIgnorePattern: '^_',
+						varsIgnorePattern: '^_',
+						caughtErrorsIgnorePattern: '^_'
 					}
 				]
 			}

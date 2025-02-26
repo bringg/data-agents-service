@@ -1,7 +1,8 @@
+import { config } from '@bringg/service';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
+
 import { filterSchema } from './schemas/filter_schema';
-import { config } from '@bringg/service';
 
 export const widgetTypeNumberDataTool = tool(
 	async input => {

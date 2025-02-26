@@ -1,5 +1,5 @@
-import { tool } from '@langchain/core/tools';
 import { config } from '@bringg/service';
+import { tool } from '@langchain/core/tools';
 
 export const metaTool = tool(
 	async () => {
@@ -19,6 +19,7 @@ export const metaTool = tool(
 		}
 
 		const data = await response.json();
+
 		return data;
 	},
 	{

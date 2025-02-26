@@ -1,5 +1,6 @@
-import { tool } from '@langchain/core/tools';
 import { config } from '@bringg/service';
+import { WidgetCatalogItemDto } from '@bringg/types';
+import { tool } from '@langchain/core/tools';
 
 const getDescriptionsDict = async () => {
 	const url = 'https://app.bringg.com/apps/analytics/reports/locale/en.json';
@@ -32,14 +33,15 @@ export const widgetCatalogMetaTool = tool(
 				'Content-Type': 'application/json'
 			}
 		});
+
 		if (!response.ok) {
 			throw new Error(`HTTP error! status: ${response.status}`);
 		}
 
-		const data = await response.json();
+		const { data } = (await response.json()) as { data: Array<WidgetCatalogItemDto> };
 		const descriptionsDict = await getDescriptionsDict();
 
-		const populatedDescriptionData = data.data.map((item: any) => ({
+		const populatedDescriptionData = data.map(item => ({
 			...item,
 			defaultDescription: descriptionsDict[item.defaultDescription]
 		}));

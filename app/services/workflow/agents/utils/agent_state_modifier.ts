@@ -31,5 +31,5 @@ export const agentStateModifier = (
 			  `
 	);
 
-	return (state: typeof MessagesAnnotation.State): any[] => [systemMsg, ...state.messages];
+	return (state: typeof MessagesAnnotation.State): BaseMessage[] => [systemMsg, ...state.messages];
 };

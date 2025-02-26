@@ -1,8 +1,8 @@
 //! NO HTTP ENDPOINT
-import { tool } from '@langchain/core/tools';
-import { z } from 'zod';
 import { config } from '@bringg/service';
 import { WidgetType } from '@bringg/types';
+import { tool } from '@langchain/core/tools';
+import { z } from 'zod';
 
 export const widgetTypeLineDataTool = tool(
 	async input => {

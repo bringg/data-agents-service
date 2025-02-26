@@ -1,23 +1,25 @@
-import { AIMessage, BaseMessage, HumanMessage, isAIMessageChunk } from '@langchain/core/messages';
-import { Annotation, StateGraph, START, END, StreamMode, StateSnapshot } from '@langchain/langgraph';
-import { Response } from 'express';
-import { IsRelevant, SetSSE } from '../../decorators';
-import { composerAgent, documentationAgent } from '../../agents';
-import { CompiledSuperWorkflowType, SuperGraphStateType, SuperWorkflowStateType } from './types';
-import { AnalyticsWorkflow } from '../analytics_sub_graph';
-import { createTeamSupervisor } from '../../agents/utils';
-import { MAIN_SUPERVISOR_PROMPT } from '../../prompts';
-import { SUPER_MEMBERS } from '../../agents/super_level_agents/constants';
-import { humanNode } from '../../agents/human_node';
-import { v4 as uuidv4 } from 'uuid';
-import { RedisSaver } from '../../memory/short-term';
-import redis from '@bringg/service/lib/redis';
-import { createLLM } from '../../utils';
-import { RunnableLambda } from '@langchain/core/runnables';
-import { StatusCodes } from 'http-status-codes';
-import { ERRORS } from '../../../../common';
 import { logger } from '@bringg/service';
+import redis from '@bringg/service/lib/redis';
+import { BaseMessage, HumanMessage, isAIMessageChunk } from '@langchain/core/messages';
+import { RunnableLambda } from '@langchain/core/runnables';
+import { Annotation, END, START, StateGraph, StateSnapshot, StreamMode } from '@langchain/langgraph';
+import { Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import { v4 as uuidv4 } from 'uuid';
+
+import { ERRORS } from '../../../../common';
+import { composerAgent, documentationAgent } from '../../agents';
+import { humanNode } from '../../agents/human_node';
+import { SUPER_MEMBERS } from '../../agents/super_level_agents/constants';
+import { createTeamSupervisor } from '../../agents/utils';
+import { IsRelevant, SetSSE } from '../../decorators';
+import { RedisSaver } from '../../memory/short-term';
+import { MAIN_SUPERVISOR_PROMPT } from '../../prompts';
+import { createLLM } from '../../utils';
+import { AnalyticsWorkflow } from '../analytics_sub_graph';
+import { AnalyticsWorkflowStateType } from '../analytics_sub_graph/types';
 import { GRAPH_STATUS_DESCRIPTION } from './constants';
+import { CompiledSuperWorkflowType, SuperGraphStateType, SuperWorkflowStateType } from './types';
 
 export class SuperWorkflow {
 	private readonly options = { recursionLimit: 15, subgraphs: true, streamMode: 'messages' as StreamMode };
@@ -26,11 +28,11 @@ export class SuperWorkflow {
 	private static checkpointer: RedisSaver;
 	private static GraphState: SuperGraphStateType;
 
-	public static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
+	static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
 	// gpt-4o-mini has better results than gemini-2.0-flash for supervising
-	public static readonly supervisorLLM = createLLM({ provider: 'openai', model: 'gpt-4o-mini' });
+	static readonly supervisorLLM = createLLM({ provider: 'openai', model: 'gpt-4o-mini' });
 
-	public static async initialize() {
+	public static async initialize(): Promise<void> {
 		// Initialize GraphState
 		this.GraphState = Annotation.Root({
 			merchant_id: Annotation<number>,
@@ -61,14 +63,14 @@ export class SuperWorkflow {
 		const supervisorAgent = await createTeamSupervisor(this.supervisorLLM, MAIN_SUPERVISOR_PROMPT, SUPER_MEMBERS);
 
 		// Create analytics chain
-		const analyticsWorkflow = new AnalyticsWorkflow(this.supervisorLLM);
+		const analyticsWorkflow = new AnalyticsWorkflow();
 		const analyticsSubGraph = await analyticsWorkflow.createAnalyticsGraph();
 
 		const getMessages = RunnableLambda.from((state: SuperWorkflowStateType) => {
 			return { messages: state.messages };
 		});
 
-		const joinGraph = RunnableLambda.from((response: any) => {
+		const joinGraph = RunnableLambda.from((response: AnalyticsWorkflowStateType) => {
 			return {
 				messages: [response.messages[response.messages.length - 1]]
 			};
@@ -83,6 +85,7 @@ export class SuperWorkflow {
 			.addNode('Composer', composerAgent)
 			.addEdge('AnalyticsTeam', 'Supervisor')
 			.addEdge('Documentation', 'Supervisor')
+			/* eslint-disable-next-line */
 			.addConditionalEdges('Supervisor', (x: any) => x.next, {
 				AnalyticsTeam: 'AnalyticsTeam',
 				Documentation: 'Documentation',
@@ -99,11 +102,12 @@ export class SuperWorkflow {
 	}
 
 	public async getConversationMessages(threadId: string, userId: number): Promise<BaseMessage[]> {
-		const { values }: StateSnapshot = await this.getConversationByThreadID(threadId, userId);
-		return values ? values.conversation_messages : [];
+		const { values }: { values?: SuperWorkflowStateType } = await this.getConversationByThreadID(threadId, userId);
+
+		return (values ? values.conversation_messages : []) as BaseMessage[];
 	}
 
-	public async addConversationMessage(thread_id: string, message: BaseMessage) {
+	public async addConversationMessage(thread_id: string, message: BaseMessage): Promise<void> {
 		await SuperWorkflow.superGraph.updateState(
 			{ configurable: { thread_id } },
 			{ conversation_messages: [message] }
@@ -132,9 +136,11 @@ export class SuperWorkflow {
 		// Extract graph events and stream them back
 		try {
 			let prevNode = '';
+
 			for await (const [_, metadata] of stream) {
 				const node = metadata[1]?.langgraph_node as string;
 				const graphStatus = GRAPH_STATUS_DESCRIPTION[node];
+
 				if (graphStatus && prevNode !== node) {
 					prevNode = node;
 					response.write(`event: Status\n`);

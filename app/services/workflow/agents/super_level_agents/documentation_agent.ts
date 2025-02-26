@@ -1,7 +1,8 @@
 import { HumanMessage } from '@langchain/core/messages';
+
 import { SuperWorkflowStateType } from '../../graphs/super_graph/types';
 
-export const documentationAgent = async (state: SuperWorkflowStateType) => {
+export const documentationAgent = async (_state: SuperWorkflowStateType): Promise<{ messages: HumanMessage[] }> => {
 	return {
 		messages: [
 			new HumanMessage({

@@ -1,7 +1,8 @@
-import { BaseMessage, SystemMessage } from '@langchain/core/messages';
-import { SEMANTIC_ROUTER_PROMPT } from '../prompts';
+import { BaseMessage } from '@langchain/core/messages';
 import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
+
 import { SuperWorkflow } from '../graphs/super_graph';
+import { SEMANTIC_ROUTER_PROMPT } from '../prompts';
 
 /**
  * Check if a question is relevant to the current conversation context.
@@ -25,5 +26,6 @@ export const checkQuestionRelevance = async (messages: BaseMessage[]): Promise<b
 	if (typeof response.content === 'string') {
 		return response.content.includes('YES');
 	}
+
 	return false;
 };

@@ -1,7 +1,8 @@
+import { config } from '@bringg/service';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
-import { QueryZodSchema } from './schemas/load_tool_schemas';
-import { config } from '@bringg/service';
+
+// import { QueryZodSchema } from './schemas/load_tool_schemas';
 
 export const loadTool = tool(
 	async input => {

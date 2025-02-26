@@ -1,9 +1,10 @@
 //! NO HTTP ENDPOINT
+import { config } from '@bringg/service';
+import { WidgetType } from '@bringg/types';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
-import { config } from '@bringg/service';
+
 import { filterSchema } from './schemas';
-import { WidgetType } from '@bringg/types';
 
 export const widgetTypeReversedFullWidthBarDataTool = tool(
 	async input => {

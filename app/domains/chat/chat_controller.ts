@@ -1,17 +1,17 @@
-import { Context, GET, Path, PathParam, POST, PreProcessor, Security, ServiceContext } from 'typescript-rest';
+import { ReqValidator /**throwProblem */ } from '@bringg/service';
+import { BaseMessage } from '@langchain/core/messages';
+// import { StatusCodes } from 'http-status-codes';
+import { Context, GET, Path, PathParam, POST, PreProcessor, /** Security */ ServiceContext } from 'typescript-rest';
 
-import { throwProblem, ReqValidator } from '@bringg/service';
-import { newChatRules, continueChatRules } from './validation/chat_validation';
-import { StatusCodes } from 'http-status-codes';
-
-import { ContinueChatDto, NewChatDto } from './types';
 import { workflow } from '../../services/workflow/graphs/super_graph';
+import { ContinueChatDto, NewChatDto } from './types';
+import { continueChatRules, newChatRules } from './validation/chat_validation';
 
 @Path('/chat')
 // @Security('*', 'bringg-jwt')
 export class ChatController {
 	@Context
-	public context: ServiceContext;
+	context: ServiceContext;
 
 	@POST
 	@Path('/')
@@ -20,7 +20,7 @@ export class ChatController {
 	 * POST /chat
 	 * Creates a new chat thread.
 	 */
-	public async newChat({ initialMessage }: NewChatDto) {
+	public async newChat({ initialMessage }: NewChatDto): Promise<void> {
 		const { merchantId, userId } = this.context.request.user || {};
 
 		// if (!userId || !merchantId) {
@@ -39,7 +39,7 @@ export class ChatController {
 	 * POST /chat/:id
 	 * Continues a given chat thread by threadId.
 	 */
-	public async continueChat(@PathParam('threadId') threadId: string, { message }: ContinueChatDto) {
+	public async continueChat(@PathParam('threadId') threadId: string, { message }: ContinueChatDto): Promise<void> {
 		const { merchantId, userId } = this.context.request.user || {};
 
 		// if (!userId || !merchantId) {
@@ -55,8 +55,8 @@ export class ChatController {
 	 * GET /chat/:id
 	 * Returns a given chat thread by threadId.
 	 */
-	public async getChatByThreadId(@PathParam('threadId') threadId: string) {
-		const { merchantId, userId } = this.context.request.user || {};
+	public async getChatByThreadId(@PathParam('threadId') threadId: string): Promise<BaseMessage[]> {
+		const { userId } = this.context.request.user || {};
 
 		// if (!userId || !merchantId) {
 		// 	throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
