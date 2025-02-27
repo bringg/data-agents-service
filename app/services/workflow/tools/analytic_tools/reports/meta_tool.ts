@@ -1,4 +1,4 @@
-import { config, logger } from '@bringg/service';
+import { logger } from '@bringg/service';
 import { CubeMetaDto } from '@bringg/types';
 import { RunnableConfig } from '@langchain/core/runnables';
 import { tool } from '@langchain/core/tools';
@@ -13,7 +13,7 @@ const toolSchema = {
 
 const _metaToolHttp = tool(async () => {
 	const url = 'https://us2-admin-api.bringg.com/analytics-service/v1/query-engine/own-fleet/presto/meta';
-	const jwt = config.get('analyticsJWT');
+	const jwt = process.env.analyticsJWT;
 
 	const response = await fetch(url, {
 		method: 'GET',

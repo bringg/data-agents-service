@@ -1,5 +1,3 @@
-// filepath: /Users/yahav.levy/Projects/data-agents-service/app/services/workflow/tools/analytic_tools/bi_dashboards/widget_type_reversed_bar_data_tool.ts
-import { config } from '@bringg/service';
 import { WidgetType } from '@bringg/types';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
@@ -11,7 +9,7 @@ export const widgetTypeReversedBarDataTool = tool(
 		const { widgetCatalogId, ...body } = input;
 
 		const url = `https://us2-admin-api.bringg.com/analytics-service/v1/parent-app/own-fleet/dashboards/widget-type/${WidgetType.ReversedBarChart}/widgets-catalog-id/${widgetCatalogId}/get-data`;
-		const jwt = config.get('analyticsJWT');
+		const jwt = process.env.analyticsJWT;
 
 		const response = await fetch(url, {
 			method: 'POST',

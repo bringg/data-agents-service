@@ -1,6 +1,6 @@
 import { config } from '@bringg/service';
 
-export const getDescriptionsDict = async () => {
+export const getDescriptionsDict = async (): Promise<Record<string, string>> => {
 	const url = config.get('reportsDictURL');
 
 	const response = await fetch(url, {

@@ -1,5 +1,4 @@
 //! NO HTTP ENDPOINT
-import { config } from '@bringg/service';
 import { WidgetType } from '@bringg/types';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
@@ -7,7 +6,7 @@ import { z } from 'zod';
 export const widgetTypeLineDataTool = tool(
 	async input => {
 		const url = `https://us2-admin-api.bringg.com/analytics-service/v1/parent-app/own-fleet/dashboards/widget-type/${WidgetType.LineChart}/widgets-catalog-id/${input.widgetCatalogId}/get-data`;
-		const jwt = config.get('analyticsJWT');
+		const jwt = process.env.analyticsJWT;
 
 		const response = await fetch(url, {
 			method: 'POST',

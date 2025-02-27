@@ -1,10 +1,9 @@
-import { config } from '@bringg/service';
 import { DashboardType, WidgetCatalogItemDto } from '@bringg/types';
 import { RunnableConfig } from '@langchain/core/runnables';
 import { tool } from '@langchain/core/tools';
-import { SuperWorkflow } from 'app/services/workflow/graphs/super_graph';
 
 import { IS_DEV } from '../../../../../common/constants';
+import { SuperWorkflow } from '../../../graphs/super_graph';
 import { getDescriptionsDict } from './utils';
 
 const toolSchema = {
@@ -14,7 +13,7 @@ const toolSchema = {
 
 export const _widgetCatalogMetaToolHttp = tool(async () => {
 	const url = 'https://us2-admin-api.bringg.com/analytics-service/v1/dashboards/widgets-catalog-items';
-	const jwt = config.get('analyticsJWT');
+	const jwt = process.env.analyticsJWT;
 
 	const response = await fetch(url, {
 		method: 'GET',

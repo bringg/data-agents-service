@@ -1,11 +1,11 @@
-import { config, logger } from '@bringg/service';
-import { DbQueryResult,PrestoDbLoadResultDto } from '@bringg/types';
+import { logger } from '@bringg/service';
+import { PrestoDbLoadResultDto } from '@bringg/types';
 import { RunnableConfig } from '@langchain/core/runnables';
 import { tool } from '@langchain/core/tools';
-import { SuperWorkflow } from 'app/services/workflow/graphs/super_graph';
 import { z } from 'zod';
 
 import { IS_DEV } from '../../../../../common/constants';
+import { SuperWorkflow } from '../../../graphs/super_graph';
 import { QueryZodSchema } from './schemas/load_tool_schemas';
 
 const toolSchema = {
@@ -19,7 +19,7 @@ const toolSchema = {
 
 export const _loadToolHttp = tool(async input => {
 	const url = 'https://us2-admin-api.bringg.com/analytics-service/v1/query-engine/own-fleet/presto/load';
-	const jwt = config.get('analyticsJWT');
+	const jwt = process.env.analyticsJWT;
 
 	const response = await fetch(url, {
 		method: 'POST',
