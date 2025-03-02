@@ -1,12 +1,20 @@
 import { interrupt } from '@langchain/langgraph';
-import { SuperWorkflow, SuperWorkflowStateType } from '../../graphs/super_graph';
+import { SuperWorkflow, SuperWorkflowStateType, workflow } from '../../graphs/super_graph';
+import { RunnableConfig } from '@langchain/core/runnables';
+import { HumanMessage } from '@langchain/core/messages';
 
-export const humanNode = async (state: SuperWorkflowStateType) => {
-	const { content } = await SuperWorkflow.llm.invoke(
-		`A customer is going to read your output.
-		 Transpile the given instructions onto a first-person conversation. Reply only with what
-		  the customer needs to read. instructions: ${state.instructions}`
-	);
+export const humanNode = async (state: SuperWorkflowStateType, config?: RunnableConfig) => {
+	const { content } = await SuperWorkflow.llm.invoke([
+		new HumanMessage(
+			`A customer is going to read your output.
+			Transpile the given instructions onto a first-person conversation. Reply only with what
+			 the customer needs to read. instructions: ${state.instructions}`
+		)
+	]);
+
+	// Save the interrupt to Redis
+	const threadId = config?.configurable?.thread_id as string;
+	workflow.addConversationMessage(threadId, new HumanMessage({ content: content, name: 'HumanNode' }));
 
 	// After interrupting the workflow will be returning automatically to the supervisor
 	interrupt(content);

@@ -48,4 +48,20 @@ export class ChatController {
 
 		await workflow.streamGraph(this.context.response, message, merchantId as number, userId as number, threadId);
 	}
+
+	@Path(`/:threadId`)
+	@GET
+	/**
+	 * GET /chat/:id
+	 * Returns a given chat thread by threadId.
+	 */
+	public async getChatByThreadId(@PathParam('threadId') threadId: string) {
+		const { merchantId, userId } = this.context.request.user || {};
+
+		// if (!userId || !merchantId) {
+		// 	throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
+		// }
+
+		return await workflow.getConversationMessages(threadId, userId as number);
+	}
 }

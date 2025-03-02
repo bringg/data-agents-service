@@ -1,7 +1,7 @@
-import { BaseMessage, HumanMessage } from '@langchain/core/messages';
-import { Annotation, StateGraph, START, END, StreamMode } from '@langchain/langgraph';
+import { AIMessage, BaseMessage, HumanMessage, isAIMessageChunk } from '@langchain/core/messages';
+import { Annotation, StateGraph, START, END, StreamMode, StateSnapshot } from '@langchain/langgraph';
 import { Response } from 'express';
-import { IsRelevant } from '../../decorators';
+import { IsRelevant, SetSSE } from '../../decorators';
 import { composerAgent, documentationAgent } from '../../agents';
 import { CompiledSuperWorkflowType, SuperGraphStateType, SuperWorkflowStateType } from './types';
 import { AnalyticsWorkflow } from '../analytics_sub_graph';
@@ -15,15 +15,18 @@ import redis from '@bringg/service/lib/redis';
 import { createLLM } from '../../utils';
 import { RunnableLambda } from '@langchain/core/runnables';
 import { StatusCodes } from 'http-status-codes';
+import { ERRORS } from '../../../../common';
 
 export class SuperWorkflow {
 	private readonly options = { recursionLimit: 15, subgraphs: true, streamMode: 'messages' as StreamMode };
 
-	public static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
-
 	private static superGraph: CompiledSuperWorkflowType;
 	private static checkpointer: RedisSaver;
 	private static GraphState: SuperGraphStateType;
+
+	public static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
+	// gpt-4o-mini has better results than gemini-2.0-flash for supervising
+	public static readonly supervisorLLM = createLLM({ provider: 'openai', model: 'gpt-4o-mini' });
 
 	public static async initialize() {
 		// Initialize GraphState
@@ -31,6 +34,10 @@ export class SuperWorkflow {
 			merchant_id: Annotation<number>,
 			user_id: Annotation<number>,
 			messages: Annotation<BaseMessage[]>({
+				reducer: (x, y) => x.concat(y),
+				default: () => []
+			}),
+			conversation_messages: Annotation<BaseMessage[]>({
 				reducer: (x, y) => x.concat(y),
 				default: () => []
 			}),
@@ -49,17 +56,10 @@ export class SuperWorkflow {
 		this.checkpointer = new RedisSaver({ connection: redis.cache });
 
 		// Create super graph supervisor
-		const supervisorAgent = await createTeamSupervisor(
-			// Only gpt-4o right now has an option to push system message
-			// at the end of it's input, it's necessary for FINISH
-			createLLM({ model: 'gpt-4o-mini', provider: 'openai' }),
-			MAIN_SUPERVISOR_PROMPT,
-			SUPER_MEMBERS,
-			true
-		);
+		const supervisorAgent = await createTeamSupervisor(this.supervisorLLM, MAIN_SUPERVISOR_PROMPT, SUPER_MEMBERS);
 
 		// Create analytics chain
-		const analyticsWorkflow = new AnalyticsWorkflow(this.llm);
+		const analyticsWorkflow = new AnalyticsWorkflow(this.supervisorLLM);
 		const analyticsSubGraph = await analyticsWorkflow.createAnalyticsGraph();
 
 		const getMessages = RunnableLambda.from((state: SuperWorkflowStateType) => {
@@ -92,6 +92,23 @@ export class SuperWorkflow {
 			.compile({ checkpointer: this.checkpointer });
 	}
 
+	public async getConversationByThreadID(threadId: string, userId: number): Promise<StateSnapshot> {
+		return await SuperWorkflow.superGraph.getState({ configurable: { thread_id: threadId, user: userId } });
+	}
+
+	public async getConversationMessages(threadId: string, userId: number): Promise<BaseMessage[]> {
+		const { values }: StateSnapshot = await this.getConversationByThreadID(threadId, userId);
+		return values ? values.conversation_messages : [];
+	}
+
+	public async addConversationMessage(thread_id: string, message: BaseMessage) {
+		await SuperWorkflow.superGraph.updateState(
+			{ configurable: { thread_id } },
+			{ conversation_messages: [message] }
+		);
+	}
+
+	@SetSSE
 	@IsRelevant
 	public async streamGraph(
 		response: Response,
@@ -100,28 +117,26 @@ export class SuperWorkflow {
 		userId: number,
 		threadId: string = uuidv4()
 	): Promise<void> {
-		//Set SSE headers
-		response.setHeader('Content-Type', 'text/event-stream');
-		response.setHeader('Cache-Control', 'no-cache');
-		response.setHeader('Connection', 'keep-alive');
-
 		const stream = await SuperWorkflow.superGraph.stream(
 			{
+				conversation_messages: [new HumanMessage({ content: userInput })],
 				messages: [new HumanMessage({ content: userInput })],
 				merchant_id: merchantId,
 				user_id: userId
 			},
-			{ ...this.options, configurable: { thread_id: threadId } }
+			{ ...this.options, configurable: { thread_id: threadId, user: userId } }
 		);
 
 		response.write(`id: ${threadId}\n`);
 		response.write(`event: Response\n`);
 
 		// Extract graph events and stream them back
-
 		try {
 			for await (const [_, metadata] of stream) {
-				if (metadata[1]?.langgraph_node === 'Composer' || metadata[1]?.langgraph_node === 'HumanNode') {
+				const node = metadata[1]?.langgraph_node;
+
+				if ((node === 'Composer' || node === 'HumanNode') && isAIMessageChunk(metadata[0])) {
+					console.log(metadata);
 					response.write(`data: ${metadata[0].content} \n\n`);
 				}
 			}
@@ -129,8 +144,7 @@ export class SuperWorkflow {
 			console.error(e);
 			response.status(StatusCodes.INTERNAL_SERVER_ERROR);
 			response.write(`event: Error\n`);
-			// TODO - const dict of default messages
-			response.write(`data: Sorry, it seems like I encountered a problem. Let's try again! \n\n`);
+			response.write(`data: ${ERRORS.STREAM_ERROR} \n\n`);
 		}
 
 		response.end();

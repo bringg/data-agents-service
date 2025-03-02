@@ -1,5 +1,8 @@
+import { StateSnapshot } from '@langchain/langgraph';
 import { checkQuestionRelevance } from '../utils';
 import { Response } from 'express';
+import { HumanMessage } from '@langchain/core/messages';
+import { ERRORS } from '../../../common';
 
 /**
  * Decorator that checks if the first argument (assumed to be a question string)
@@ -9,23 +12,21 @@ import { Response } from 'express';
 export function IsRelevant(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
 	const originalMethod = descriptor.value;
 	descriptor.value = async function (...args: any[]) {
-		// Retrieve the question from this.messages[0].content.
-		// Adjust this extraction based on your actual HumanMessage structure.
+		// Get method arguments
 		const question: string = args[1];
 		const response: Response = args[0];
+		const threadId: string | undefined = args[4];
 
-		const relevance = await checkQuestionRelevance(question);
+		const { values }: StateSnapshot = threadId ? await this.getConversationByThreadID(threadId) : {};
+
+		const conversationHistory = values ? values.messages : [];
+		const fullConversation = [...conversationHistory, new HumanMessage(question)];
+
+		const relevance = await checkQuestionRelevance(fullConversation);
 
 		if (!relevance) {
-			//Set SSE headers
-			response.setHeader('Content-Type', 'text/event-stream');
-			response.setHeader('Cache-Control', 'no-cache');
-			response.setHeader('Connection', 'keep-alive');
-
 			response.write('event: Non-Relevant\n');
-			response.write(
-				`data: I'm Sorry, it's seems like your question isn't Bringg related. Try asking me another question!\n\n`
-			);
+			response.write(`data: ${ERRORS.BAD_INPUT}\n\n`);
 			response.end();
 			return;
 		}
