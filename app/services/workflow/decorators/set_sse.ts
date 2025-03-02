@@ -3,10 +3,11 @@ import { Response } from 'express';
 /**
  * Decorator that sets the headers for Server-Sent Events (SSE).
  */
-export function SetSSE(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+export function SetSSE(_target: unknown, _propertyKey: string, descriptor: PropertyDescriptor): PropertyDescriptor {
 	const originalMethod = descriptor.value;
-	descriptor.value = async function (...args: any[]) {
-		const response: Response = args[0];
+
+	descriptor.value = async function (...args: unknown[]): Promise<void> {
+		const response = args[0] as Response;
 
 		response.setHeader('Content-Type', 'text/event-stream');
 		response.setHeader('Cache-Control', 'no-cache');
@@ -14,5 +15,6 @@ export function SetSSE(target: any, propertyKey: string, descriptor: PropertyDes
 
 		return await originalMethod.apply(this, args);
 	};
+
 	return descriptor;
 }

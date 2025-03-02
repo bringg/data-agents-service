@@ -26,8 +26,10 @@ export const agentStateModifier = (
 			  Remember, you individually can only use these tools: ${toolNames}.
 			  n\nEnd only if you have already completed the requested task, were given a wrong task or you don't have the
 			  necessary knowledge in order to provide the answer. 
-			  Communicate the work completed.`
+			  Communicate the work completed.
+			  Current time: ${new Date().toISOString()}
+			  `
 	);
 
-	return (state: typeof MessagesAnnotation.State): any[] => [systemMsg, ...state.messages];
+	return (state: typeof MessagesAnnotation.State): BaseMessage[] => [systemMsg, ...state.messages];
 };
