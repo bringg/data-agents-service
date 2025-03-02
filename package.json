@@ -10,11 +10,13 @@
 	},
 	"scripts": {
 		"start": "node -r @bringg/service/bootstrap dist/server.js",
+		"start-dev": "generate-config-local && node_modules/.bin/nodemon",
 		"prestart": "generate-config-prod",
 		"build": "tsc",
 		"test": "nyc --reporter=cobertura ts-mocha",
 		"prettier": "prettier --write \"{app,test}/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
 		"prettier-check": "prettier -c \"{app,test}/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+		"check:eslint": "node_modules/.bin/eslint \"app/**/*.ts\" --fix",
 		"eslint-check": "eslint \"{app,test}/**/*\"",
 		"ts-check": "tsc --noEmit"
 	},
