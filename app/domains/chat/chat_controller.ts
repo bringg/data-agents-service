@@ -1,7 +1,7 @@
-import { ReqValidator /**throwProblem */ } from '@bringg/service';
+import { ReqValidator, throwProblem } from '@bringg/service';
 import { BaseMessage } from '@langchain/core/messages';
-// import { StatusCodes } from 'http-status-codes';
-import { Context, GET, Path, PathParam, POST, PreProcessor, /** Security */ ServiceContext } from 'typescript-rest';
+import { StatusCodes } from 'http-status-codes';
+import { Context, GET, Path, PathParam, POST, PreProcessor, Security, ServiceContext } from 'typescript-rest';
 
 import { workflow } from '../../services/workflow/graphs/super_graph';
 import { ContinueChatDto, NewChatDto } from './types';
@@ -56,7 +56,7 @@ export class ChatController {
 	 * Returns a given chat thread by threadId.
 	 */
 	public async getChatByThreadId(@PathParam('threadId') threadId: string): Promise<BaseMessage[]> {
-		const { userId } = this.context.request.user || {};
+		const { userId, merchantId } = this.context.request.user || {};
 
 		if (!userId || !merchantId) {
 			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
