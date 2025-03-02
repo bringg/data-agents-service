@@ -1,17 +1,17 @@
+import { ReqValidator, throwProblem } from '@bringg/service';
+import { BaseMessage } from '@langchain/core/messages';
+import { StatusCodes } from 'http-status-codes';
 import { Context, GET, Path, PathParam, POST, PreProcessor, Security, ServiceContext } from 'typescript-rest';
 
-import { throwProblem, ReqValidator } from '@bringg/service';
-import { newChatRules, continueChatRules } from './validation/chat_validation';
-import { StatusCodes } from 'http-status-codes';
-
-import { ContinueChatDto, NewChatDto } from './types';
 import { workflow } from '../../services/workflow/graphs/super_graph';
+import { ContinueChatDto, NewChatDto } from './types';
+import { continueChatRules, newChatRules } from './validation/chat_validation';
 
 @Path('/chat')
-// @Security('*', 'bringg-jwt')
+@Security('*', 'bringg-jwt')
 export class ChatController {
 	@Context
-	public context: ServiceContext;
+	context: ServiceContext;
 
 	@POST
 	@Path('/')
@@ -20,15 +20,9 @@ export class ChatController {
 	 * POST /chat
 	 * Creates a new chat thread.
 	 */
-	public async newChat({ initialMessage }: NewChatDto) {
-		const { merchantId, userId } = this.context.request.user || {};
+	public async newChat({ initialMessage }: NewChatDto): Promise<void> {
+		const { merchantId, userId } = this.validateUser();
 
-		// if (!userId || !merchantId) {
-		// 	throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
-		// }
-
-		//TODO - store in redis for POC [userId : {threadId, initialMessage}]
-		//TODO - store in pg for long-term
 		await workflow.streamGraph(this.context.response, initialMessage, merchantId as number, userId as number);
 	}
 
@@ -39,12 +33,8 @@ export class ChatController {
 	 * POST /chat/:id
 	 * Continues a given chat thread by threadId.
 	 */
-	public async continueChat(@PathParam('threadId') threadId: string, { message }: ContinueChatDto) {
-		const { merchantId, userId } = this.context.request.user || {};
-
-		// if (!userId || !merchantId) {
-		// 	throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
-		// }
+	public async continueChat(@PathParam('threadId') threadId: string, { message }: ContinueChatDto): Promise<void> {
+		const { merchantId, userId } = this.validateUser();
 
 		await workflow.streamGraph(this.context.response, message, merchantId as number, userId as number, threadId);
 	}
@@ -55,13 +45,24 @@ export class ChatController {
 	 * GET /chat/:id
 	 * Returns a given chat thread by threadId.
 	 */
-	public async getChatByThreadId(@PathParam('threadId') threadId: string) {
-		const { merchantId, userId } = this.context.request.user || {};
-
-		// if (!userId || !merchantId) {
-		// 	throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
-		// }
+	public async getChatByThreadId(@PathParam('threadId') threadId: string): Promise<BaseMessage[]> {
+		const { merchantId: _, userId } = this.validateUser();
 
 		return await workflow.getConversationMessages(threadId, userId as number);
+	}
+
+	/**
+	 * Validates the user and returns the userId and merchantId as numbers.
+	 * @returns { userId: number, merchantId: number }
+	 */
+	private validateUser(): { userId: number; merchantId: number } {
+		const { userId, merchantId } = this.context.request.user || {};
+
+		// eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+		if (!userId || !merchantId) {
+			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
+		}
+
+		return { userId, merchantId };
 	}
 }

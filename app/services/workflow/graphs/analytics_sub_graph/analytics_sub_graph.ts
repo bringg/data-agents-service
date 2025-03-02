@@ -1,19 +1,18 @@
 import { BaseMessage } from '@langchain/core/messages';
-import { Annotation, StateGraph, START, END } from '@langchain/langgraph';
+import { Runnable, RunnableConfig, RunnableLambda } from '@langchain/core/runnables';
+import { Annotation, END, START, StateGraph } from '@langchain/langgraph';
+
 import { biDashboardsAgent, reportsAgent } from '../../agents';
-import { AnalyticsGraphStateType } from './types';
 import { ANALYTICS_MEMBERS } from '../../agents/analytics_level_agents/constants';
-import { ANALYTICS_SUPERVISOR_PROMPT } from '../../prompts';
 import { createTeamSupervisor } from '../../agents/utils';
-import { ChatAI } from '../../types';
-import { RunnableLambda } from '@langchain/core/runnables';
+import { ANALYTICS_SUPERVISOR_PROMPT } from '../../prompts';
 import { SuperWorkflow } from '../super_graph';
+import { AnalyticsGraphStateType } from './types';
 
 export class AnalyticsWorkflow {
 	private GraphState: AnalyticsGraphStateType;
-	private llm: ChatAI;
 
-	constructor(llm: ChatAI) {
+	constructor() {
 		// Initialize GraphState
 		this.GraphState = Annotation.Root({
 			merchant_id: Annotation<number>,
@@ -32,11 +31,12 @@ export class AnalyticsWorkflow {
 				default: () => "Solve the user's question."
 			})
 		});
-
-		this.llm = llm;
 	}
 
-	public async createAnalyticsGraph() {
+	public async createAnalyticsGraph(): Promise<
+		/* eslint-disable-next-line */
+		Runnable<{ messages: BaseMessage[] }, any, RunnableConfig<Record<string, any>>>
+	> {
 		// Create graph supervisor
 		const supervisorAgent = await createTeamSupervisor(
 			SuperWorkflow.supervisorLLM,
@@ -51,6 +51,7 @@ export class AnalyticsWorkflow {
 			.addNode('AnalyticsSupervisor', supervisorAgent)
 			.addEdge('BiDashboards', 'AnalyticsSupervisor')
 			.addEdge('Reports', 'AnalyticsSupervisor')
+			/* eslint-disable-next-line */
 			.addConditionalEdges('AnalyticsSupervisor', (x: any) => x.next, {
 				BiDashboards: 'BiDashboards',
 				Reports: 'Reports',

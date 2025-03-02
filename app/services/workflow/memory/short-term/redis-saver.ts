@@ -1,24 +1,25 @@
+/* eslint-disable */
 import type { RunnableConfig } from '@langchain/core/runnables';
-import type { Redis } from 'ioredis';
 import {
-	BaseCheckpointSaver,
 	type Checkpoint,
 	type CheckpointListOptions,
+	type CheckpointMetadata,
 	type CheckpointTuple,
-	type SerializerProtocol,
 	type PendingWrite,
-	type CheckpointMetadata
+	type SerializerProtocol,
+	BaseCheckpointSaver
 } from '@langchain/langgraph-checkpoint';
+import type { Redis } from 'ioredis';
 
 import {
+	dumpWrites,
+	filterKeys,
+	loadWrites,
 	makeRedisCheckpointKey,
 	makeRedisCheckpointWritesKey,
-	parseRedisCheckpointWritesKey,
-	filterKeys,
-	dumpWrites,
-	loadWrites,
 	parseRedisCheckpointData,
-	parseRedisCheckpointKey
+	parseRedisCheckpointKey,
+	parseRedisCheckpointWritesKey
 } from './utils';
 
 export type RedisSaverParams = {
@@ -91,7 +92,9 @@ export class RedisSaver extends BaseCheckpointSaver {
 
 		const checkpointKey = await this._getCheckpointKey(thread_id, checkpoint_ns, checkpoint_id);
 
-		if (!checkpointKey) return;
+		if (!checkpointKey) {
+			return;
+		}
 
 		const checkpointData = await this.connection.hgetall(checkpointKey);
 
@@ -131,6 +134,7 @@ export class RedisSaver extends BaseCheckpointSaver {
 
 		for (const key of keys) {
 			const data = await this.connection.hgetall(key);
+
 			if (data && data.checkpoint && data.metadata) {
 				yield parseRedisCheckpointData(this.serde, key, data);
 			}
@@ -155,6 +159,7 @@ export class RedisSaver extends BaseCheckpointSaver {
 		const latest_key = all_keys.reduce((maxKey, currentKey) => {
 			const maxKeyData = parseRedisCheckpointKey(maxKey);
 			const currentKeyData = parseRedisCheckpointKey(currentKey);
+
 			return maxKeyData.checkpoint_id > currentKeyData.checkpoint_id ? maxKey : currentKey;
 		});
 

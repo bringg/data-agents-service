@@ -16,11 +16,14 @@
 
 	// airbrake configuration
 	airbrake: {
-		projectId: 581979,
-		projectKey: 'cb430bd75b72f191048fbde373fd1686'
+		projectId: 612794,
+		projectKey: '58bd22ec88282bf529e10e6226281dbc'
 	},
 
+	reportsDictURL: 'https://app.bringg.com/apps/analytics/reports/locale/en.json',
+
 	sentry: {
-		dsn: 'https://824d395211dc741ae94adfc50b42046e@o4507413897347072.ingest.de.sentry.io/4507882145054800'
+		enabled: true,
+		dsn: 'https://2b0cd5be6217dd10836f984f4981a246@o4507413897347072.ingest.de.sentry.io/4508907107647569'
 	}
 }

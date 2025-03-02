@@ -1,8 +1,9 @@
+/* eslint-disable */
 import type { RunnableConfig } from '@langchain/core/runnables';
 import {
 	type CheckpointTuple,
-	type SerializerProtocol,
 	type PendingWrite,
+	type SerializerProtocol,
 	CheckpointPendingWrite
 } from '@langchain/langgraph-checkpoint';
 
@@ -49,6 +50,7 @@ export function filterKeys(keys: string[], before?: RunnableConfig, limit?: numb
 	if (before) {
 		processedKeys = processedKeys.filter(k => {
 			const checkpointKey = parseRedisCheckpointKey(k);
+
 			return checkpointKey.checkpoint_id < before.configurable?.checkpoint_id;
 		});
 	}
@@ -56,6 +58,7 @@ export function filterKeys(keys: string[], before?: RunnableConfig, limit?: numb
 	processedKeys = processedKeys.sort((a, b) => {
 		const checkpointKeyA = parseRedisCheckpointKey(a);
 		const checkpointKeyB = parseRedisCheckpointKey(b);
+
 		return checkpointKeyA.checkpoint_id.localeCompare(checkpointKeyB.checkpoint_id);
 	});
 
@@ -72,6 +75,7 @@ export function dumpWrites(
 ): { channel: string; type: string; value: Uint8Array }[] {
 	return writes.map(([channel, value]) => {
 		const [type, serializedValue] = serde.dumpsTyped(value);
+
 		return { channel, type, value: serializedValue };
 	});
 }
@@ -143,5 +147,6 @@ export function parseRedisCheckpointKey(redisKey: string): Record<string, string
 function decodeCommaSeperatedString(str: string): string {
 	const numbers = str.split(',').map(num => parseInt(num, 10));
 	const uint8Array = new Uint8Array(numbers);
+
 	return new TextDecoder().decode(uint8Array);
 }

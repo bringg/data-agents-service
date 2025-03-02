@@ -1,6 +1,7 @@
 import { BaseMessage } from '@langchain/core/messages';
-import { BinaryOperatorAggregate, StateType, Annotation } from '@langchain/langgraph';
+import { Annotation, BinaryOperatorAggregate, StateType } from '@langchain/langgraph';
 import { AnnotationRoot, CompiledStateGraph, StateDefinition, UpdateType } from '@langchain/langgraph/dist/graph';
+
 import { SUPER_MEMBERS } from '../../../agents/super_level_agents/constants';
 
 type SuperAnnotationRoot = {
@@ -9,7 +10,7 @@ type SuperAnnotationRoot = {
 	messages: BinaryOperatorAggregate<BaseMessage[], BaseMessage[]>;
 	// conversation messages consists of messages that only the user can see
 	conversation_messages: BinaryOperatorAggregate<BaseMessage[], BaseMessage[]>;
-	next: BinaryOperatorAggregate<{}, unknown>;
+	next: BinaryOperatorAggregate<object, unknown>;
 	instructions: BinaryOperatorAggregate<string, string>;
 };
 

@@ -9,9 +9,16 @@
 		"npm": ">=10.2.4"
 	},
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1",
 		"start": "node -r @bringg/service/bootstrap dist/server.js",
-		"start-dev": "generate-config-local && node_modules/.bin/nodemon"
+		"start-dev": "generate-config-local && node_modules/.bin/nodemon",
+		"prestart": "generate-config-prod",
+		"build": "tsc",
+		"test": "nyc --reporter=cobertura ts-mocha",
+		"prettier": "prettier --write \"{app,test}/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+		"prettier-check": "prettier -c \"{app,test}/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+		"check:eslint": "node_modules/.bin/eslint \"app/**/*.ts\" --fix",
+		"eslint-check": "eslint \"{app,test}/**/*\"",
+		"ts-check": "tsc --noEmit"
 	},
 	"author": "",
 	"prettier": "@bringg/prettier-config",
@@ -50,10 +57,10 @@
 	},
 	"dependencies": {
 		"@bringg/service": "^3.35.1",
-		"@bringg/service-utils": "^4.54.36",
-		"@bringg/types": "^4.184.9",
-		"@langchain/core": "^0.3.38",
-		"@langchain/google-vertexai": "^0.1.8",
+		"@bringg/service-utils": "^4.55.0",
+		"@bringg/types": "^4.185.0",
+		"@langchain/core": "^0.3.40",
+		"@langchain/google-vertexai": "^0.2.0",
 		"@langchain/langgraph": "^0.2.44",
 		"@langchain/openai": "^0.4.3",
 		"uuid": "^11.0.5"

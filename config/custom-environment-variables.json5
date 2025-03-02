@@ -7,17 +7,6 @@
 		}
 	},
 
-	database: {
-		main: {
-			connection: {
-				host: 'PGHOST',
-				user: 'PGUSER',
-				password: 'PGPASSWORD',
-				database: 'PGDATABASE'
-			}
-		}
-	},
-
 	jwt: {
 		internalSignKey: 'BRINGG_JWT_SIGN_KEY_INTERNAL'
 	}
