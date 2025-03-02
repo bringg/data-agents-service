@@ -1,5 +1,6 @@
 import { logger } from '@bringg/service';
 import redis from '@bringg/service/lib/redis';
+import { AnalyticsRpcClient } from '@bringg/service-utils';
 import { BaseMessage, HumanMessage, isAIMessageChunk } from '@langchain/core/messages';
 import { RunnableLambda } from '@langchain/core/runnables';
 import { Annotation, END, START, StateGraph, StateSnapshot, StreamMode } from '@langchain/langgraph';
@@ -8,6 +9,7 @@ import { StatusCodes } from 'http-status-codes';
 import { v4 as uuidv4 } from 'uuid';
 
 import { ERRORS } from '../../../../common';
+import { IS_DEV } from '../../../../common/constants';
 import { composerAgent, documentationAgent } from '../../agents';
 import { humanNode } from '../../agents/human_node';
 import { SUPER_MEMBERS } from '../../agents/super_level_agents/constants';
@@ -31,6 +33,8 @@ export class SuperWorkflow {
 	static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
 	// gpt-4o-mini has better results than gemini-2.0-flash for supervising
 	static readonly supervisorLLM = createLLM({ provider: 'openai', model: 'gpt-4o-mini' });
+
+	static readonly rpcClient = new AnalyticsRpcClient();
 
 	public static async initialize(): Promise<void> {
 		// Initialize GraphState
@@ -123,6 +127,10 @@ export class SuperWorkflow {
 		userId: number,
 		threadId: string = uuidv4()
 	): Promise<void> {
+		// For test purposes
+		IS_DEV ? (userId = 10267117) : userId;
+		IS_DEV ? (merchantId = 2288) : merchantId;
+
 		const stream = await SuperWorkflow.superGraph.stream(
 			{
 				conversation_messages: [new HumanMessage({ content: userInput })],
@@ -130,7 +138,7 @@ export class SuperWorkflow {
 				merchant_id: merchantId,
 				user_id: userId
 			},
-			{ ...this.options, configurable: { thread_id: threadId, user: userId } }
+			{ ...this.options, configurable: { thread_id: threadId, user_id: userId, merchant_id: merchantId } }
 		);
 
 		// Extract graph events and stream them back

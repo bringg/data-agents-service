@@ -1,6 +1,5 @@
 {
 	httpServer: {
 		port: 3010
-	},
-	analyticsJWT: ''
+	}
 }

@@ -1,6 +1,8 @@
+import { WidgetDataFilter } from '@bringg/types';
 import { z } from 'zod';
 
-export const filterSchema: z.ZodType = z.object({
+//@ts-ignore
+export const filterSchema: z.ZodType<WidgetDataFilter> = z.object({
 	comparison: z.array(z.string()).length(2).optional(),
 	dates: z.array(z.string()).length(2),
 	teams: z.array(z.string()).optional(),

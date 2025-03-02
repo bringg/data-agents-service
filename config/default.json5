@@ -22,5 +22,6 @@
 
 	sentry: {
 		dsn: 'https://824d395211dc741ae94adfc50b42046e@o4507413897347072.ingest.de.sentry.io/4507882145054800'
-	}
+	},
+	reportsDictURL: 'https://app.bringg.com/apps/analytics/reports/locale/en.json'
 }
