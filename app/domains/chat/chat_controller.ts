@@ -58,8 +58,8 @@ export class ChatController {
 	private validateUser(): { userId: number; merchantId: number } {
 		const { userId, merchantId } = this.context.request.user || {};
 
+		// eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
 		if (!userId || !merchantId) {
-			// eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
 			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
 		}
 
