@@ -21,14 +21,8 @@ export class ChatController {
 	 * Creates a new chat thread.
 	 */
 	public async newChat({ initialMessage }: NewChatDto): Promise<void> {
-		const { merchantId, userId } = this.context.request.user || {};
+		const { merchantId, userId } = this.validateUser();
 
-		if (!userId || !merchantId) {
-			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
-		}
-
-		//TODO - store in redis for POC [userId : {threadId, initialMessage}]
-		//TODO - store in pg for long-term
 		await workflow.streamGraph(this.context.response, initialMessage, merchantId as number, userId as number);
 	}
 
@@ -40,11 +34,7 @@ export class ChatController {
 	 * Continues a given chat thread by threadId.
 	 */
 	public async continueChat(@PathParam('threadId') threadId: string, { message }: ContinueChatDto): Promise<void> {
-		const { merchantId, userId } = this.context.request.user || {};
-
-		if (!userId || !merchantId) {
-			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
-		}
+		const { merchantId, userId } = this.validateUser();
 
 		await workflow.streamGraph(this.context.response, message, merchantId as number, userId as number, threadId);
 	}
@@ -56,12 +46,23 @@ export class ChatController {
 	 * Returns a given chat thread by threadId.
 	 */
 	public async getChatByThreadId(@PathParam('threadId') threadId: string): Promise<BaseMessage[]> {
+		const { merchantId: _, userId } = this.validateUser();
+
+		return await workflow.getConversationMessages(threadId, userId as number);
+	}
+
+	/**
+	 * Validates the user and returns the userId and merchantId as numbers.
+	 * @returns { userId: number, merchantId: number }
+	 */
+	private validateUser(): { userId: number; merchantId: number } {
 		const { userId, merchantId } = this.context.request.user || {};
 
 		if (!userId || !merchantId) {
+			// eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
 			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
 		}
 
-		return await workflow.getConversationMessages(threadId, userId as number);
+		return { userId, merchantId };
 	}
 }
