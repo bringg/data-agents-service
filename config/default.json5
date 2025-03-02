@@ -16,9 +16,11 @@
 
 	// airbrake configuration
 	airbrake: {
-		projectId: 581979,
-		projectKey: 'cb430bd75b72f191048fbde373fd1686'
+		projectId: 612794,
+		projectKey: '58bd22ec88282bf529e10e6226281dbc'
 	},
+
+	reportsDictURL: 'https://app.bringg.com/apps/analytics/reports/locale/en.json',
 
 	sentry: {
 		enabled: true,
