@@ -8,7 +8,7 @@ import { ContinueChatDto, NewChatDto } from './types';
 import { workflow } from '../../services/workflow/graphs/super_graph';
 
 @Path('/chat')
-// @Security('*', 'bringg-jwt')
+@Security('*', 'bringg-jwt')
 export class ChatController {
 	@Context
 	public context: ServiceContext;
@@ -23,9 +23,9 @@ export class ChatController {
 	public async newChat({ initialMessage }: NewChatDto) {
 		const { merchantId, userId } = this.context.request.user || {};
 
-		// if (!userId || !merchantId) {
-		// 	throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
-		// }
+		if (!userId || !merchantId) {
+			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
+		}
 
 		//TODO - store in redis for POC [userId : {threadId, initialMessage}]
 		//TODO - store in pg for long-term
@@ -42,9 +42,9 @@ export class ChatController {
 	public async continueChat(@PathParam('threadId') threadId: string, { message }: ContinueChatDto) {
 		const { merchantId, userId } = this.context.request.user || {};
 
-		// if (!userId || !merchantId) {
-		// 	throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
-		// }
+		if (!userId || !merchantId) {
+			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
+		}
 
 		await workflow.streamGraph(this.context.response, message, merchantId as number, userId as number, threadId);
 	}
@@ -58,9 +58,9 @@ export class ChatController {
 	public async getChatByThreadId(@PathParam('threadId') threadId: string) {
 		const { merchantId, userId } = this.context.request.user || {};
 
-		// if (!userId || !merchantId) {
-		// 	throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
-		// }
+		if (!userId || !merchantId) {
+			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
+		}
 
 		return await workflow.getConversationMessages(threadId, userId as number);
 	}
