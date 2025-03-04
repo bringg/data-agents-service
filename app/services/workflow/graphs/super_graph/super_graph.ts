@@ -100,6 +100,9 @@ export class SuperWorkflow {
 			.compile({ checkpointer: this.checkpointer });
 	}
 
+	/**
+	 * Gets the whole graph state by thread_id and identity
+	 */
 	public async getConversationByThreadID(
 		threadId: string,
 		userId: number,
@@ -110,6 +113,13 @@ export class SuperWorkflow {
 		});
 	}
 
+	/**
+	 * Get the conversation messages by thread_id and identity
+	 * @param threadId
+	 * @param userId
+	 * @param merchantId
+	 * @returns
+	 */
 	public async getConversationMessages(threadId: string, userId: number, merchantId: number): Promise<BaseMessage[]> {
 		const { values }: { values?: SuperWorkflowStateType } = await this.getConversationByThreadID(
 			threadId,
@@ -120,6 +130,11 @@ export class SuperWorkflow {
 		return (values ? values.conversation_messages : []) as BaseMessage[];
 	}
 
+	/**
+	 * Add a message to the conversation by thread_id
+	 * @param thread_id
+	 * @param message
+	 */
 	public async addConversationMessage(thread_id: string, message: BaseMessage): Promise<void> {
 		await SuperWorkflow.superGraph.updateState(
 			{ configurable: { thread_id } },
@@ -129,6 +144,9 @@ export class SuperWorkflow {
 
 	@SetSSE
 	@IsRelevant
+	/**
+	 * Stream the graph to the client via SSE
+	 */
 	public async streamGraph(
 		response: Response,
 		userInput: string,
