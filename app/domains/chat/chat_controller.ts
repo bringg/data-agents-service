@@ -23,6 +23,7 @@ export class ChatController {
 	 */
 	public async newChat({ initialMessage }: NewChatDto): Promise<void> {
 		const { merchantId, userId } = this.validateUser();
+
 		await workflow.streamGraph(this.context.response, initialMessage, merchantId as number, userId as number);
 	}
 

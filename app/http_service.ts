@@ -1,4 +1,5 @@
 import HttpServiceBuilder from '@bringg/service/lib/http_service_builder';
+
 import { PROJECT_ROOT_PATH } from './project-root-path';
 
 export const httpService = new HttpServiceBuilder()
