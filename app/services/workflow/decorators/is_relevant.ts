@@ -19,9 +19,12 @@ export function IsRelevant(_target: unknown, _propertyKey: string, descriptor: P
 		const response = args[0] as Response;
 		const threadId = args[4] as string | undefined;
 		const userId = args[3] as number;
+		const merchantId = args[2] as number;
 
 		/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-		const conversationHistory = threadId ? await workflow.getConversationMessages(threadId, userId) : [];
+		const conversationHistory = threadId
+			? await workflow.getConversationMessages(threadId, userId, merchantId)
+			: [];
 
 		const fullConversation = [...conversationHistory, new HumanMessage(question)];
 

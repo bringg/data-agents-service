@@ -9,7 +9,6 @@ import { StatusCodes } from 'http-status-codes';
 import { v4 as uuidv4 } from 'uuid';
 
 import { ERRORS } from '../../../../common';
-import { IS_DEV } from '../../../../common/constants';
 import { composerAgent, documentationAgent } from '../../agents';
 import { humanNode } from '../../agents/human_node';
 import { SUPER_MEMBERS } from '../../agents/super_level_agents/constants';
@@ -31,8 +30,8 @@ export class SuperWorkflow {
 	private static GraphState: SuperGraphStateType;
 
 	static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
-	// gpt-4o-mini has better results than gemini-2.0-flash for supervising
-	static readonly supervisorLLM = createLLM({ provider: 'openai', model: 'gpt-4o-mini' });
+	// openai has better results than vertex for supervising
+	static readonly supervisorLLM = createLLM({ provider: 'openai', model: 'gpt-4o' });
 
 	static readonly rpcClient = new AnalyticsRpcClient();
 
@@ -101,12 +100,22 @@ export class SuperWorkflow {
 			.compile({ checkpointer: this.checkpointer });
 	}
 
-	public async getConversationByThreadID(threadId: string, userId: number): Promise<StateSnapshot> {
-		return await SuperWorkflow.superGraph.getState({ configurable: { thread_id: threadId, user: userId } });
+	public async getConversationByThreadID(
+		threadId: string,
+		userId: number,
+		merchantId: number
+	): Promise<StateSnapshot> {
+		return await SuperWorkflow.superGraph.getState({
+			configurable: { thread_id: threadId, user_id: userId, merchant_id: merchantId }
+		});
 	}
 
-	public async getConversationMessages(threadId: string, userId: number): Promise<BaseMessage[]> {
-		const { values }: { values?: SuperWorkflowStateType } = await this.getConversationByThreadID(threadId, userId);
+	public async getConversationMessages(threadId: string, userId: number, merchantId: number): Promise<BaseMessage[]> {
+		const { values }: { values?: SuperWorkflowStateType } = await this.getConversationByThreadID(
+			threadId,
+			userId,
+			merchantId
+		);
 
 		return (values ? values.conversation_messages : []) as BaseMessage[];
 	}
@@ -127,10 +136,6 @@ export class SuperWorkflow {
 		userId: number,
 		threadId: string = uuidv4()
 	): Promise<void> {
-		// For test purposes
-		IS_DEV ? (userId = 10267117) : userId;
-		IS_DEV ? (merchantId = 2288) : merchantId;
-
 		const stream = await SuperWorkflow.superGraph.stream(
 			{
 				conversation_messages: [new HumanMessage({ content: userInput })],
@@ -149,12 +154,14 @@ export class SuperWorkflow {
 				const node = metadata[1]?.langgraph_node as string;
 				const graphStatus = GRAPH_STATUS_DESCRIPTION[node];
 
+				// Stream graph status description
 				if (graphStatus && prevNode !== node) {
 					prevNode = node;
 					response.write(`event: Status\n`);
 					response.write(`data: ${graphStatus} \n\n`);
 				}
 
+				// Stream final AI message
 				if ((node === 'Composer' || node === 'HumanNode') && isAIMessageChunk(metadata[0])) {
 					logger.info('Streaming AI message', { message: metadata[0].content });
 					response.write(`id: ${threadId}\n`);

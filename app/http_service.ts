@@ -1,9 +1,8 @@
 import HttpServiceBuilder from '@bringg/service/lib/http_service_builder';
-import express from 'express';
+import { PROJECT_ROOT_PATH } from './project-root-path';
 
 export const httpService = new HttpServiceBuilder()
 	.useContext()
-	.useRoot(__dirname)
-	.useBodyParser(express.json({ limit: '50mb' }))
+	.useRoot(PROJECT_ROOT_PATH)
 	.useServicePattern(...[`./**/*controller.{ts,js}`])
 	.build();

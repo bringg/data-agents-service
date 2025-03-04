@@ -1,0 +1,17 @@
+/**
+ * default configuration file
+ * put here configuration which are usable across all environments
+ *
+ * note the file is in JSON5 format (http://json5.org)
+ */
+{
+	httpServer: {
+		// Start server at random port
+		port: 0
+	},
+
+	service_pattern: [
+		// Use either ts or js (in dev and test it will use ts and in prod it will use js)
+		'./**/*controller.{ts,js}'
+	]
+}

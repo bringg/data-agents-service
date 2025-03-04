@@ -35,76 +35,75 @@ pipeline {
             }
         }
 
-        // WE DONT HAVE TESTS YET
-        // stage('Tests') {
-        //     when { // allow to skip all tests
-        //         expression { !getGit.lastCommitSubject().contains('[skip tests]') }
-        //     }
+        stage('Tests') {
+            when { // allow to skip all tests
+                expression { !getGit.lastCommitSubject().contains('[skip tests]') }
+            }
 
-        //     parallel {
-        //         stage('Unit') {
-        //             environment {
-        //                 CODECOV_TOKEN = '43c7bf34-f7cf-46b0-9105-e323690a79c9'
-        //                 PGDATABASE    = 'postgres'
-        //                 PGPASSWORD    = 'postgres'
-        //                 PGUSER        = 'postgres'
-        //             }
+            parallel {
+                stage('Unit') {
+                    environment {
+                        CODECOV_TOKEN = 'ca32ca53-2e89-42ce-b19c-a7ee898269c1'
+                        PGDATABASE    = 'postgres'
+                        PGPASSWORD    = 'postgres'
+                        PGUSER        = 'postgres'
+                    }
 
-        //             steps {
-        //                 // Build local configuration for tests using the configuration-service cli
-        //                 buildServiceTestConfig(getRepoName(), "nodejs")
+                    steps {
+                        // Build local configuration for tests using the configuration-service cli
+                        buildServiceTestConfig(getRepoName(), "nodejs")
 
-        //                 withServices { service, network ->
-        //                     script {
-        //                         service(withServices.SVC_POSTGRES)
-        //                         service(withServices.SVC_REDIS)
-        //                         sleep 5 // making sure all of the above booted
-        //                     }
+                        withServices { service, network ->
+                            script {
+                                service(withServices.SVC_POSTGRES)
+                                service(withServices.SVC_REDIS)
+                                sleep 5 // making sure all of the above booted
+                            }
 
-        //                     // prepare DB for tests
-        //                     setupHagmoniaDb(network, 'production')
+                            // prepare DB for tests
+                            setupHagmoniaDb(network, 'production')
 
-        //                     withDockerfile(file: 'Dockerfile.ci', args: "--net ${network}") {
-        //                         sh 'npm test -- --coverage --forceExit'
-        //                     }
-        //                 }
-        //             }
+                            withDockerfile(file: 'Dockerfile.ci', args: "--net ${network}") {
+                                sh 'npm test -- --coverage --forceExit'
+                            }
+                        }
+                    }
 
-        //             post {
-        //                 success {
-        //                     codecov()
-        //                 }
+                    post {
+                        success {
+                            codecov()
+                        }
 
-        //                 always {
-        //                     junit(testResults: 'junit*.xml', allowEmptyResults: true)
+                        always {
+                            junit(testResults: 'junit*.xml', allowEmptyResults: true)
 
-        //                     withCiScripts() {
-        //                         sh 'utils.sh junit2es --debug --xml junit.xml || true'
-        //                     }                          
-        //                 }
-        //             }
-        //         }
+                            withCiScripts() {
+                                sh 'utils.sh junit2es --debug --xml junit.xml || true'
+                            }                          
+                        }
+                    }
+                }
 
-        //         // stage('Integration') {
-        //         //     steps {
-        //         //         integrationTests('AllTests', [
-        //         //             'microsvc.insights_side_car_service_image_tag': "${dockerUtils.getImageTag(dockerImage.id)}"
-        //         //         ])
-        //         //     }
-        //         // }
+                stage('Integration') {
+                    steps {
+                        integrationTests('AllTests', [
+                            'microsvc.data_agents_service_image_tag': "${dockerUtils.getImageTag(dockerImage.id)}"
+                        ])
+                    }
+                }
 
-        //         stage('SAST') {
-        //             when { changeRequest() }
+                stage('SAST') {
+                    when { changeRequest() }
 
-        //             steps {
-        //                 mendsast(
-        //                     engines: [mendsast.ENGINES.typeScript],
-        //                     exclude: ['.github/', 'config/', 'test/', 'dist/', 'node_modules/']
-        //                 )
-        //             }
-        //         }
-        //     }
-        // }
+                    steps {
+                        mendsast(
+                            engines: [mendsast.ENGINES.typeScript],
+                            exclude: ['.github/', 'config/', 'test/', 'dist/', 'node_modules/']
+                        )
+                    }
+                }
+            }
+        }
         
         stage('Deploy') {
             when {
