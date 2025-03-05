@@ -135,6 +135,10 @@ export class SuperWorkflow {
 			merchantId
 		);
 
+		if (!values || merchantId !== values.merchant_id || userId !== values.user_id) {
+			return [];
+		}
+
 		return (values ? values.conversation_messages : []) as BaseMessage[];
 	}
 
