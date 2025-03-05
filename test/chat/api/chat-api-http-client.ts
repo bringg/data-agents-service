@@ -1,5 +1,6 @@
 import { InteractiveClients } from '@bringg/service';
 import { BaseHttpClient } from '@bringg/test-utils';
+
 import { ChatController } from '../../../app/domains/chat/chat_controller';
 import { ContinueChatDto, NewChatDto } from '../../../app/domains/chat/types';
 import { RouteResponse } from '../../__helper__/types';

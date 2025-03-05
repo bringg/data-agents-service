@@ -1,4 +1,3 @@
-import { BaseMessage } from '@langchain/core/messages';
 import { ERRORS } from '../../app/common';
 
 // Define sample messages and responses.

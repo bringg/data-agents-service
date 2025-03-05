@@ -29,11 +29,11 @@ export class SuperWorkflow {
 	private static checkpointer: RedisSaver;
 	private static GraphState: SuperGraphStateType;
 
-	static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
+	public static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
 	// openai has better results than vertex for supervising
-	static readonly supervisorLLM = createLLM({ provider: 'openai', model: 'gpt-4o' });
+	public static readonly supervisorLLM = createLLM({ provider: 'openai', model: 'gpt-4o' });
 
-	static readonly rpcClient = new AnalyticsRpcClient();
+	public static readonly rpcClient = new AnalyticsRpcClient();
 
 	public static async initialize(): Promise<void> {
 		// Initialize GraphState

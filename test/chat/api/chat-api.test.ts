@@ -1,12 +1,12 @@
 import { BaseMessage } from '@langchain/core/messages';
-
-import { ERRORS } from '../../../app/common';
-import { ADDITIONAL_MSG, INITIAL_MSG, IRRELEVANT_MSG, MOCK_RES_REQ } from '../../constants/test.constants';
-import { workflow } from '../../../app/services/workflow/graphs/super_graph';
-import { workflowMock } from '../mocks/super_graph.mock';
-import { ChatHttpClient } from './chat-api-http-client';
 import { expect } from 'chai';
 import * as sinon from 'sinon';
+
+import { ERRORS } from '../../../app/common';
+import { workflow } from '../../../app/services/workflow/graphs/super_graph';
+import { ADDITIONAL_MSG, INITIAL_MSG, IRRELEVANT_MSG, MOCK_RES_REQ } from '../../constants/test.constants';
+import { workflowMock } from '../mocks/super_graph.mock';
+import { ChatHttpClient } from './chat-api-http-client';
 
 /**
  * The main idea here is to test the ChatController class.
@@ -68,6 +68,7 @@ describe('Chat Controller', () => {
 
 			// Extract the thread id from the response
 			const data = res.data as unknown as string;
+
 			threadId = data.split('\n')[0].split(' ')[1];
 		});
 
@@ -84,6 +85,7 @@ describe('Chat Controller', () => {
 
 			// Check that it's the same threadId.
 			const resThreadId = data.split('\n')[0].split(' ')[1];
+
 			expect(resThreadId).equals(threadId);
 		});
 
@@ -98,6 +100,7 @@ describe('Chat Controller', () => {
 
 			// Check that it's the same threadId.
 			const resThreadId = data.split('\n')[0].split(' ')[1];
+
 			expect(resThreadId).equals(threadId);
 		});
 

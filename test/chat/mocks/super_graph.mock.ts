@@ -1,12 +1,13 @@
-import { Response } from 'express';
 import { BaseMessage } from '@langchain/core/messages';
+import { Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+
 import { IRRELEVANT_MSG, MOCK_RES_REQ } from '../../constants/test.constants';
 
 // Mock class implementation for SuperGraph.
 export class SuperGraphMock {
-	static threadId: string = uuidv4();
-	static STATE = {
+	public static threadId: string = uuidv4();
+	public static STATE = {
 		conversation_messages: [] as BaseMessage[],
 		user_id: undefined,
 		merchant_id: undefined
@@ -53,10 +54,14 @@ export class SuperGraphMock {
 			threadId === SuperGraphMock.threadId &&
 			userId === SuperGraphMock.STATE.user_id &&
 			merchantId === SuperGraphMock.STATE.merchant_id
-		)
+		) {
 			return SuperGraphMock.STATE.conversation_messages;
+		}
+
 		// Wrong values/non-existent threadId returns empty list.
-		else return [];
+		else {
+			return [];
+		}
 	}
 }
 

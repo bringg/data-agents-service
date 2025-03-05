@@ -12,7 +12,7 @@ import { continueChatRules, newChatRules } from './validation/chat_validation';
 @Security('*', 'bringg-jwt')
 export class ChatController {
 	@Context
-	context: ServiceContext;
+	private context: ServiceContext;
 
 	@POST
 	@Path('/')
