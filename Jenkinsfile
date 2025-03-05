@@ -86,7 +86,7 @@ pipeline {
 
                 stage('Integration') {
                     steps {
-                        integrationTests('AllTests', [
+                        integrationTests('DataAgentsServiceTests', [
                             'microsvc.data_agents_service_image_tag': "${dockerUtils.getImageTag(dockerImage.id)}"
                         ])
                     }
