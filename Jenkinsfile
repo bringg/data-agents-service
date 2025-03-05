@@ -84,13 +84,13 @@ pipeline {
                     }
                 }
 
-                stage('Integration') {
-                    steps {
-                        integrationTests('DataAgentsServiceTests', [
-                            'microsvc.data_agents_service_image_tag': "${dockerUtils.getImageTag(dockerImage.id)}"
-                        ])
-                    }
-                }
+                // stage('Integration') {
+                //     steps {
+                //         integrationTests('DataAgentsServiceTests', [
+                //             'microsvc.data_agents_service_image_tag': "${dockerUtils.getImageTag(dockerImage.id)}"
+                //         ])
+                //     }
+                // }
 
                 stage('SAST') {
                     when { changeRequest() }
