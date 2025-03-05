@@ -7,7 +7,7 @@ import { ANALYTICS_MEMBERS } from '../../agents/analytics_level_agents/constants
 import { createTeamSupervisor } from '../../agents/utils';
 import { ANALYTICS_SUPERVISOR_PROMPT } from '../../prompts';
 import { SuperWorkflow } from '../super_graph';
-import { AnalyticsGraphStateType } from './types';
+import { AnalyticsGraphStateType, AnalyticsWorkflowStateType } from './types';
 
 export class AnalyticsWorkflow {
 	private GraphState: AnalyticsGraphStateType;
@@ -59,12 +59,17 @@ export class AnalyticsWorkflow {
 			})
 			.addEdge(START, 'AnalyticsSupervisor');
 
-		const enterAnalyticsChain = RunnableLambda.from(({ messages }: { messages: BaseMessage[] }) => {
-			return {
-				messages: messages,
-				team_members: ANALYTICS_MEMBERS
-			};
-		});
+		const enterAnalyticsChain = RunnableLambda.from(
+			({ messages, instructions, merchant_id, user_id }: Partial<AnalyticsWorkflowStateType>) => {
+				return {
+					messages: messages,
+					instructions: instructions,
+					merchant_id: merchant_id,
+					user_id: user_id,
+					team_members: ANALYTICS_MEMBERS
+				};
+			}
+		);
 
 		return enterAnalyticsChain.pipe(analyticsGraph.compile());
 	}

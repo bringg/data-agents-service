@@ -63,7 +63,6 @@ You have access to the following tools:
           "timezone":"America/Chicago",
           "useTimeDimension":true
         }
-
 ---
 ## ENUMERATIONS & MAPPINGS
 

@@ -260,6 +260,38 @@ Below are sample JSON bodies you can pass to the load_tool. Note that your usage
   "offset": 0
 }
 
+7. Get all users that are drivers and not deleted
+{
+    "query": {
+        "timezone": "America/Chicago",
+        "dimensions": [
+            "UsersModel.id",
+            "UsersModel.name",
+            "UsersModel.isDeleted"
+        ],
+        "filters": [
+            {
+                "member": "UsersModel.driver",
+                "operator": "equals",
+                "values": [
+                    "true"
+                ]
+            },
+            {
+                "operator": "equals",
+                "values": [
+                    "False"
+                ],
+                "member": "UsersModel.isDeleted"
+            }
+        ],
+        "measures": [],
+        "order": [],
+        "limit": 10000,
+        "offset": 0
+    }
+}
+
 REACT AGENT INSTRUCTIONS
 	1.	Read the user’s request.
 	2.	Reason about which tool(s) to use:

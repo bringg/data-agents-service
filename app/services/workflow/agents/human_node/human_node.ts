@@ -16,7 +16,7 @@ export const humanNode = async (state: SuperWorkflowStateType, config?: Runnable
 	// Save the interrupt to Redis
 	const threadId = config?.configurable?.thread_id as string;
 
-	workflow.addConversationMessage(threadId, new HumanMessage({ content: content, name: 'HumanNode' }));
+	workflow.addConversationMessages(threadId, [new HumanMessage({ content: content, name: 'HumanNode' })]);
 
 	// After interrupting the workflow will be returning automatically to the supervisor
 	interrupt(content);

@@ -41,7 +41,10 @@ export class SuperWorkflow {
 			merchant_id: Annotation<number>,
 			user_id: Annotation<number>,
 			messages: Annotation<BaseMessage[]>({
-				reducer: (x, y) => x.concat(y),
+				reducer: (x, y) =>
+					x.length > 0 && y.length > 0 && y[y.length - 1].content === x[x.length - 1].content
+						? x
+						: x.concat(y),
 				default: () => []
 			}),
 			conversation_messages: Annotation<BaseMessage[]>({
@@ -69,8 +72,13 @@ export class SuperWorkflow {
 		const analyticsWorkflow = new AnalyticsWorkflow();
 		const analyticsSubGraph = await analyticsWorkflow.createAnalyticsGraph();
 
-		const getMessages = RunnableLambda.from((state: SuperWorkflowStateType) => {
-			return { messages: state.messages };
+		const getState = RunnableLambda.from((state: SuperWorkflowStateType) => {
+			return {
+				messages: state.messages,
+				instructions: state.instructions,
+				merchant_id: state.merchant_id,
+				user_id: state.user_id
+			};
 		});
 
 		const joinGraph = RunnableLambda.from((response: AnalyticsWorkflowStateType) => {
@@ -81,7 +89,7 @@ export class SuperWorkflow {
 
 		// Create and compile the graph
 		this.superGraph = new StateGraph(this.GraphState)
-			.addNode('AnalyticsTeam', getMessages.pipe(analyticsSubGraph).pipe(joinGraph), {})
+			.addNode('AnalyticsTeam', getState.pipe(analyticsSubGraph).pipe(joinGraph), {})
 			.addNode('Documentation', documentationAgent)
 			.addNode('Supervisor', supervisorAgent)
 			.addNode('HumanNode', humanNode)
@@ -131,14 +139,14 @@ export class SuperWorkflow {
 	}
 
 	/**
-	 * Add a message to the conversation by thread_id
+	 * Add messages to the conversation by thread_id
 	 * @param thread_id
 	 * @param message
 	 */
-	public async addConversationMessage(thread_id: string, message: BaseMessage): Promise<void> {
+	public async addConversationMessages(thread_id: string, messages: BaseMessage[]): Promise<void> {
 		await SuperWorkflow.superGraph.updateState(
 			{ configurable: { thread_id } },
-			{ conversation_messages: [message] }
+			{ conversation_messages: messages }
 		);
 	}
 

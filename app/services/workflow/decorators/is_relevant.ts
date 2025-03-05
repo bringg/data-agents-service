@@ -1,7 +1,6 @@
 import { HumanMessage } from '@langchain/core/messages';
 import { Response } from 'express';
 
-import { ERRORS } from '../../../common';
 import { workflow } from '../graphs/super_graph';
 import { checkQuestionRelevance } from '../utils';
 
@@ -28,11 +27,18 @@ export function IsRelevant(_target: unknown, _propertyKey: string, descriptor: P
 
 		const fullConversation = [...conversationHistory, new HumanMessage(question)];
 
-		const relevance = await checkQuestionRelevance(fullConversation);
+		const { isRelevant, description } = await checkQuestionRelevance(fullConversation);
 
-		if (!relevance) {
+		if (!isRelevant && description) {
+			if (threadId) {
+				await workflow.addConversationMessages(threadId, [
+					new HumanMessage(question),
+					new HumanMessage({ content: description as string, name: 'SemanticRouter' })
+				]);
+			}
+
 			response.write('event: Non-Relevant\n');
-			response.write(`data: ${ERRORS.BAD_INPUT}\n\n`);
+			response.write(`data: ${description.replace(/\n/g, '')}\n\n`);
 			response.end();
 
 			return;

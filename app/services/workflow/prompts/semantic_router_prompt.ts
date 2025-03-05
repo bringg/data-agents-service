@@ -40,6 +40,11 @@ Your task is to determine if the last message in the given conversation context 
 	•	Examples:
 	•	"Which customers had a bad experience? Why?"
 	•	"Are there premium customers that complained about the delivery?"
+	8.  USERS
+	•	Focus: Questions about user management in the system.
+	•	Examples:
+	•	"Get all users that are drivers and not deleted."
+	•	"Get all users that has access to the system."
 
 Any question that does not clearly fall into one of these categories (e.g., general knowledge, politics, entertainment) should be rejected.
 
