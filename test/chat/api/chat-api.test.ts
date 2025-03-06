@@ -121,11 +121,21 @@ describe('Chat Controller', () => {
 			expect(res.data).to.deep.equal(chatHistory);
 		});
 
-		it('GET /chat/:threadId should return an empty array of chat messages from an non-existent', async () => {
+		it('GET /chat/:threadId should return an empty array of chat messages from a non-existent threadId', async () => {
 			// Prepare a sample chat history.
 			const chatHistory = [] as BaseMessage[];
 
 			const res = await client.getChatByThreadId(`fake-thread-id`);
+
+			// Validate that the GET endpoint returns the expected array of messages.
+			expect(res.data).to.deep.equal(chatHistory);
+		});
+
+		it('GET /chat/:threadId should return an empty array with right thread id but wrong user', async () => {
+			// Prepare a sample chat history.
+			const chatHistory = [] as BaseMessage[];
+
+			const res = await client.switchIdentity({ merchantId: 1, userId: 2 }).getChatByThreadId(threadId);
 
 			// Validate that the GET endpoint returns the expected array of messages.
 			expect(res.data).to.deep.equal(chatHistory);

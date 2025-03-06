@@ -31,7 +31,7 @@ export class SuperWorkflow {
 
 	public static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
 	// openai has better results than vertex for supervising
-	public static readonly supervisorLLM = createLLM({ provider: 'openai', model: 'gpt-4o' });
+	public static readonly supervisorLLM = createLLM({ provider: 'openai-reasoning', model: 'o3-mini' });
 
 	public static readonly rpcClient = new AnalyticsRpcClient();
 

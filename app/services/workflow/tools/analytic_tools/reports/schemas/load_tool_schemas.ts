@@ -49,10 +49,10 @@ const _FilterSchema: z.ZodType<Filter> =
 
 // @ts-ignore
 export const QueryZodSchema: ZodType<Query> = z.object({
-	measures: z.array(z.string()).min(1).optional(),
-	dimensions: z.array(z.string()).min(1).optional(),
+	measures: z.array(z.string()).min(0).optional(),
+	dimensions: z.array(z.string()).min(0).optional(),
 	//! GEMINI DOESN'T SUPPORT RECURSIVE SCHEMA
-	filters: z.array(_FilterSchema).min(1).optional(),
+	filters: z.array(_FilterSchema).optional(),
 	timeDimensions: z
 		.array(
 			z.object({
@@ -61,9 +61,8 @@ export const QueryZodSchema: ZodType<Query> = z.object({
 				dateRange: z.union([z.string(), z.array(z.string()).length(2)]).optional()
 			})
 		)
-		.min(1)
 		.optional(),
-	segments: z.array(z.string()).min(1).optional(),
+	segments: z.array(z.string()).min(0).optional(),
 	limit: z.number().optional(),
 	offset: z.number().optional(),
 	order: z
