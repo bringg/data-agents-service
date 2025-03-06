@@ -1,4 +1,3 @@
-// import { Query } from '@bringg/types';
 import { Filter, Query } from '@bringg/types';
 import { z, ZodType } from 'zod';
 
@@ -27,38 +26,33 @@ const _BinaryFilterSchema = z.object({
 	values: z.array(z.string())
 });
 
-const _UnaryFilterSchema = z
-	.object({
-		member: z.string(),
-		operator: UnaryOperatorSchema
-		// This schema disallows a `values` property.
-	})
-	.strict();
-
+const _UnaryFilterSchema = z.object({
+	member: z.string(),
+	operator: UnaryOperatorSchema
+	// This schema disallows a `values` property.
+});
 // Use z.lazy to allow for recursive definitions for logical filters
-const _FilterSchema: z.ZodType<Filter> = z.lazy(() =>
+//@ts-ignore
+const _FilterSchema: z.ZodType<Filter> =
+	// z.lazy(() =>
 	z.union([
 		_BinaryFilterSchema,
 		_UnaryFilterSchema,
-		z
-			.object({
-				and: z.array(_FilterSchema)
-			})
-			.strict(),
-		z
-			.object({
-				or: z.array(_FilterSchema)
-			})
-			.strict()
-	])
-);
+		z.object({
+			and: z.array(z.object({}).passthrough()).describe('Array of filters to be ANDed')
+		}),
+		z.object({
+			or: z.array(z.object({}).passthrough()).describe('Array of filters to be ORed')
+		})
+	]);
+// );
 
 // @ts-ignore
 export const QueryZodSchema: ZodType<Query> = z.object({
-	measures: z.array(z.string()).optional(),
-	dimensions: z.array(z.string()).optional(),
+	measures: z.array(z.string()).min(0).optional(),
+	dimensions: z.array(z.string()).min(0).optional(),
 	//! GEMINI DOESN'T SUPPORT RECURSIVE SCHEMA
-	// filters: z.array(FilterSchema).optional(),
+	filters: z.array(_FilterSchema).optional(),
 	timeDimensions: z
 		.array(
 			z.object({
@@ -68,7 +62,7 @@ export const QueryZodSchema: ZodType<Query> = z.object({
 			})
 		)
 		.optional(),
-	segments: z.array(z.string()).optional(),
+	segments: z.array(z.string()).min(0).optional(),
 	limit: z.number().optional(),
 	offset: z.number().optional(),
 	order: z

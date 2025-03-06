@@ -82,10 +82,24 @@ export const ANALYTICS_MEMBERS_DESCRIPTION = {
  - Average number of successfully delivered orders per route.
  - Average route duration from its start time to the end time of the last order (task) on the route. 
   `,
-	Reports: `
+	Reports: `The Reports Builder is a self-serve tool that allows users to create custom BI reports by dragging and dropping data fields from key operational areas such as 
+  orders, shipments, vehicles, users, and carriers. It helps answer questions about order fulfillment performance, driver and carrier efficiency, shipment tracking, and overall operational trends. 
+  Users can filter data by different time periods, apply custom calculations, and compare data across teams, regions, or workflows. 
+  Pre-built system reports are also available for quick access to commonly requested insights. 
+  The tool empowers operational teams, analysts, and managers to make data-driven decisions, identify inefficiencies, and track performance in real time.
    - Examples:
      - "What was the total revenue last month?"
      - "How many deliveries were completed yesterday?"
      - "What's the average delivery time per city?"
+     - "Compare the predicted routes with the actual routes, highlighting gaps in start time, duration, distance and time at the customer site."
+     - "View all orders created in the last seven days, their status, and a summary of key fulfillment details."
+     - "View a list of your own drivers who worked on a specific day, including their start and end times, and total shift hours."
+     - "View all alerts in a given time frame to identify and troubleshoot delivery issues."
+     - "View all executed automation workflows by date and outcome to troubleshoot issues."
+     - "View the utilization of future slot capacity by skill and location, and adjust resources based on availability."
+     - 'View a breakdown of all orders canceled within the last 7 days, including who canceled them and why."
+     - "View all orders completed over the last seven days, including their status and which drivers completed them."
+     - "Time Last Time Driver Logged In"
+     - "Compare the promised with the actual time the driver arrived at the customer destination."
   `
 } as { [key in (typeof ANALYTICS_MEMBERS)[number]]: string };

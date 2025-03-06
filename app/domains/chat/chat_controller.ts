@@ -3,15 +3,16 @@ import { BaseMessage } from '@langchain/core/messages';
 import { StatusCodes } from 'http-status-codes';
 import { Context, GET, Path, PathParam, POST, PreProcessor, Security, ServiceContext } from 'typescript-rest';
 
+import { IS_DEV } from '../../common/constants';
 import { workflow } from '../../services/workflow/graphs/super_graph';
 import { ContinueChatDto, NewChatDto } from './types';
 import { continueChatRules, newChatRules } from './validation/chat_validation';
 
-@Path('/chat')
+@Path('chat')
 @Security('*', 'bringg-jwt')
 export class ChatController {
 	@Context
-	context: ServiceContext;
+	private context: ServiceContext;
 
 	@POST
 	@Path('/')
@@ -46,9 +47,9 @@ export class ChatController {
 	 * Returns a given chat thread by threadId.
 	 */
 	public async getChatByThreadId(@PathParam('threadId') threadId: string): Promise<BaseMessage[]> {
-		const { merchantId: _, userId } = this.validateUser();
+		const { merchantId, userId } = this.validateUser();
 
-		return await workflow.getConversationMessages(threadId, userId as number);
+		return await workflow.getConversationMessages(threadId, userId, merchantId);
 	}
 
 	/**
@@ -56,6 +57,11 @@ export class ChatController {
 	 * @returns { userId: number, merchantId: number }
 	 */
 	private validateUser(): { userId: number; merchantId: number } {
+		// For dev purposes
+		if (IS_DEV) {
+			return { userId: 10267117, merchantId: 2288 };
+		}
+
 		const { userId, merchantId } = this.context.request.user || {};
 
 		// eslint-disable-next-line @typescript-eslint/strict-boolean-expressions

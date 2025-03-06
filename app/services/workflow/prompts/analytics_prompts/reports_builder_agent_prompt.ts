@@ -49,10 +49,37 @@ Request Example:
   }
 }
 
-Response:
-	•	Returns an array of result rows in JSON format, with a default maximum of 10,000 rows.
-	•	The response JSON also includes a length field, indicating the number of rows in the data array.
-	•	**IMPORTANT** If the length field is exactly 10,000 or matches the limit you specified, it means more rows might be available. In that case, increase the limit parameter to retrieve additional rows. otherwise, that's the full dataset.
+**IMPORTANT** Pagination Behavior:
+
+- Each 'load_tool' response includes a 'length' field indicating how many rows it returned.
+- Your query also includes a 'limit' parameter (defaulting to 10,000 if not specified) indicating the max rows to retrieve in one call.
+- **If** 'length' < 'limit', **that means the entire dataset has been returned** and you should **not** request more pages.
+- **If** 'length' == 'limit', that suggests **there may be more rows** available. In that case:
+  - If the user wants all rows, continue fetching by increasing the 'offset' (e.g., 'offset += limit') or by raising the 'limit'.
+  - Otherwise, if the user only wants a partial sample, you can stop there.
+
+Do **not** keep fetching additional pages once you’ve determined you have the complete dataset (i.e., 'length' < 'limit') or if the user only requested partial results.
+
+**IMPORTANT** 
+  Binary Operator Types:
+  'equals',
+	'notEquals',
+	'contains',
+	'notContains',
+	'startsWith',
+	'endsWith',
+	'gt',
+	'gte',
+	'lt',
+	'lte',
+	'inDateRange',
+	'notInDateRange',
+	'beforeDate',
+	'afterDate'
+
+  Unary Operator Types:
+  'set', 
+  'notSet'
 
 HOW TO USE THESE TOOLS
 	1.	Retrieve Metadata
@@ -258,6 +285,38 @@ Below are sample JSON bodies you can pass to the load_tool. Note that your usage
   "timezone": "America/Chicago",
   "limit": 10000,
   "offset": 0
+}
+
+7. Get all users that are drivers and not deleted
+{
+    "query": {
+        "timezone": "America/Chicago",
+        "dimensions": [
+            "UsersModel.id",
+            "UsersModel.name",
+            "UsersModel.isDeleted"
+        ],
+        "filters": [
+            {
+                "member": "UsersModel.driver",
+                "operator": "equals",
+                "values": [
+                    "true"
+                ]
+            },
+            {
+                "operator": "equals",
+                "values": [
+                    "False"
+                ],
+                "member": "UsersModel.isDeleted"
+            }
+        ],
+        "measures": [],
+        "order": [],
+        "limit": 10000,
+        "offset": 0
+    }
 }
 
 REACT AGENT INSTRUCTIONS

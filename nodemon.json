@@ -2,7 +2,7 @@
 	"watch": ["app"],
 	"ignore": ["*.test.ts", "*.spec.ts", "*.fixture.ts", "*.fixtures.ts", "app/test"],
 	"ext": "ts",
-	"exec": "npm run check:eslint && scripts/nodemon-start.sh",
+	"exec": "npm run eslint-check && scripts/nodemon-start.sh",
 	"env": {
 		"NODE_ENV": "development"
 	}

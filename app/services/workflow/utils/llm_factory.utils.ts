@@ -19,6 +19,12 @@ export const createLLM = (options: LLMFactoryOptions = {}): ChatOpenAI | ChatVer
 		});
 	}
 
+	if (provider === 'openai-reasoning') {
+		return new ChatOpenAI({
+			model: model ?? 'o3-mini'
+		});
+	}
+
 	// Default to ChatOpenAI
 	return new ChatOpenAI({
 		model: model ?? 'gpt-4o-mini',

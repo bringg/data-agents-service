@@ -47,7 +47,7 @@ You have access to the following tools:
 --- Example usage:
   Q: "What is the total number of teams that received at least one order in the last week?"
   A: 1. use widget_catalog_meta_tool to explore available widgets
-     2. The field "defaultDescription" will hold the value: "Total number of teams that recieved at least one order."
+     2. The field "defaultDescription" will hold the value: "Total number of teams that received at least one order."
         you'll see all the available widgets types, filters, id and more.
      3. Let's say you chose widget type bar, 
         so you'll call widget_type_bar_data_tool with the widgetCatalogId
@@ -63,7 +63,6 @@ You have access to the following tools:
           "timezone":"America/Chicago",
           "useTimeDimension":true
         }
-
 ---
 ## ENUMERATIONS & MAPPINGS
 
@@ -110,4 +109,252 @@ Numeric values specifying the grouping dimension for data:
 - **2** → Money
 - **3** → Number
 - **4** → Time
+
+
+--- Example widget type responses:
+1) widget_type_number_data_tool
+{
+    "success": true,
+    "data": {
+        "isCropped": false,
+        "series": [
+            {
+                "title": "Average Customer wp start time to check-in time",
+                "unit": 4,
+                "queryId": 9,
+                "data": [
+                    {
+                        "x": "",
+                        "y": 1149.08
+                    }
+                ]
+            }
+        ]
+    }
+}
+
+2) widget_type_line_data_tool
+{
+    "success": true,
+    "data": {
+        "number": {
+            "value": 88283,
+            "unit": 3
+        },
+        "series": [
+            {
+                "title": "Distinct customer count",
+                "unit": 3,
+                "granularity": "day",
+                "queryId": 2,
+                "data": [
+                    {
+                        "x": "2025-02-24 00:00:00.000",
+                        "y": 11354
+                    }...
+                ]
+            }
+        ],
+        "isCropped": false,
+        "colorBy": "series"
+    }
+}
+
+3) widget_type_bar_data_tool
+{
+    "success": true,
+    "data": {
+        "number": {
+            "value": 0.78,
+            "unit": 0
+        },
+        "series": [
+            {
+                "title": "Rate orders delivered on time of all done orders",
+                "unit": 0,
+                "unitDimension": 0,
+                "queryId": 20,
+                "data": [
+                    {
+                        "x": "1",
+                        "y": 0.79
+                    }...
+                ]
+            }
+        ],
+        "isCropped": false,
+        "colorBy": "series"
+    }
+}
+
+4) widget_type_pie_data_tool //!TODO
+{
+  "data": [
+    {
+      "label": "Team A",
+      "value": 123
+    },
+    {
+      "label": "Team B",
+      "value": 456
+    }
+  ]
+}
+
+5) widget_type_donut_data_tool //!TODO
+{
+  "data": [
+    {
+      "label": "Team A",
+      "value": 123
+    },
+    {
+      "label": "Team B",
+      "value": 456
+    }
+  ]
+}
+
+6) widget_type_reversed_bar_data_tool
+{
+    "success": true,
+    "data": {
+        "number": {
+            "value": 2744.76,
+            "unit": 4
+        },
+        "series": [
+            {
+                "title": "Average Customer wp start time to checkout time",
+                "unit": 4,
+                "queryId": 18,
+                "data": [
+                    {
+                        "x": "Daniel Grady",
+                        "y": 5
+                    },
+                    ...
+                ]
+            }
+        ],
+        "isCropped": false
+    }
+}
+
+7) widget_type_reversed_full_width_bar_data_tool
+{
+    "success": true,
+    "data": {
+        "number": {
+            "value": 92782,
+            "unit": 3
+        },
+        "series": [
+            {
+                "title": "Total Number of Done Tasks",
+                "unit": 3,
+                "queryId": 36,
+                "data": [
+                    {
+                        "x": "PICK_UP_AND_DROP_OFF",
+                        "y": 3
+                    },
+                    {
+                        "x": "PICK_UP",
+                        "y": 0
+                    },
+                    {
+                        "x": "DROP_OFF",
+                        "y": 0
+                    }
+                ]
+            },
+            ...
+        ],
+        "isCropped": false
+    }
+}
+
+8) widget_type_basic_line_data_tool
+{
+    "success": true,
+    "data": {
+        "number": {
+            "value": 0.42,
+            "unit": 0
+        },
+        "series": [
+            {
+                "title": "1262 - NY - Buffalo Metro Delivery (Eastern)",
+                "unit": 0,
+                "granularity": "day",
+                "queryId": 31,
+                "data": [
+                    {
+                        "x": "2025-02-24 00:00:00.000",
+                        "y": 0.35
+                    },
+                    {
+                        "x": "2025-02-25 00:00:00.000",
+                        "y": 0.34
+                    },
+                    {
+                        "x": "2025-02-26 00:00:00.000",
+                        "y": 1
+                    },
+                    {
+                        "x": "2025-02-27 00:00:00.000",
+                        "y": 0.36
+                    },
+                    {
+                        "x": "2025-02-28 00:00:00.000",
+                        "y": 0.28
+                    },
+                    {
+                        "x": "2025-03-01 00:00:00.000",
+                        "y": 0.27
+                    },
+                    {
+                        "x": "2025-03-02 00:00:00.000",
+                        "y": 1
+                    }
+                ]
+            },
+            ...
+        ],
+        "isCropped": true,
+        "colorBy": "series"
+    }
+}
+
+9) widget_type_multi_horizontal_reversed_bar_data_tool
+{
+  "data": [
+    {
+      "label": "Team A",
+      "value": 123
+    },
+    {
+      "label": "Team B",
+      "value": 456
+    }
+  ],
+  "unitType": 3
+}
+
+10) widget_type_double_y_axis_data_tool //!TODO
+{
+  "data": [
+    {
+      "label": "Team A",
+      "value": 123
+    },
+    {
+      "label": "Team B",
+      "value": 456
+    }
+  ],
+  "unitType": 3
+}
+
 `;

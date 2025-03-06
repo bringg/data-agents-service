@@ -9,7 +9,6 @@ import { StatusCodes } from 'http-status-codes';
 import { v4 as uuidv4 } from 'uuid';
 
 import { ERRORS } from '../../../../common';
-import { IS_DEV } from '../../../../common/constants';
 import { composerAgent, documentationAgent } from '../../agents';
 import { humanNode } from '../../agents/human_node';
 import { SUPER_MEMBERS } from '../../agents/super_level_agents/constants';
@@ -30,11 +29,11 @@ export class SuperWorkflow {
 	private static checkpointer: RedisSaver;
 	private static GraphState: SuperGraphStateType;
 
-	static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
-	// gpt-4o-mini has better results than gemini-2.0-flash for supervising
-	static readonly supervisorLLM = createLLM({ provider: 'openai', model: 'gpt-4o-mini' });
+	public static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
+	// openai has better results than vertex for supervising
+	public static readonly supervisorLLM = createLLM({ provider: 'openai-reasoning', model: 'o3-mini' });
 
-	static readonly rpcClient = new AnalyticsRpcClient();
+	public static readonly rpcClient = new AnalyticsRpcClient();
 
 	public static async initialize(): Promise<void> {
 		// Initialize GraphState
@@ -42,7 +41,10 @@ export class SuperWorkflow {
 			merchant_id: Annotation<number>,
 			user_id: Annotation<number>,
 			messages: Annotation<BaseMessage[]>({
-				reducer: (x, y) => x.concat(y),
+				reducer: (x, y) =>
+					x.length > 0 && y.length > 0 && y[y.length - 1].content === x[x.length - 1].content
+						? x
+						: x.concat(y),
 				default: () => []
 			}),
 			conversation_messages: Annotation<BaseMessage[]>({
@@ -70,8 +72,13 @@ export class SuperWorkflow {
 		const analyticsWorkflow = new AnalyticsWorkflow();
 		const analyticsSubGraph = await analyticsWorkflow.createAnalyticsGraph();
 
-		const getMessages = RunnableLambda.from((state: SuperWorkflowStateType) => {
-			return { messages: state.messages };
+		const getState = RunnableLambda.from((state: SuperWorkflowStateType) => {
+			return {
+				messages: state.messages,
+				instructions: state.instructions,
+				merchant_id: state.merchant_id,
+				user_id: state.user_id
+			};
 		});
 
 		const joinGraph = RunnableLambda.from((response: AnalyticsWorkflowStateType) => {
@@ -82,7 +89,7 @@ export class SuperWorkflow {
 
 		// Create and compile the graph
 		this.superGraph = new StateGraph(this.GraphState)
-			.addNode('AnalyticsTeam', getMessages.pipe(analyticsSubGraph).pipe(joinGraph), {})
+			.addNode('AnalyticsTeam', getState.pipe(analyticsSubGraph).pipe(joinGraph), {})
 			.addNode('Documentation', documentationAgent)
 			.addNode('Supervisor', supervisorAgent)
 			.addNode('HumanNode', humanNode)
@@ -101,25 +108,57 @@ export class SuperWorkflow {
 			.compile({ checkpointer: this.checkpointer });
 	}
 
-	public async getConversationByThreadID(threadId: string, userId: number): Promise<StateSnapshot> {
-		return await SuperWorkflow.superGraph.getState({ configurable: { thread_id: threadId, user: userId } });
+	/**
+	 * Gets the whole graph state by thread_id and identity
+	 */
+	public async getConversationByThreadID(
+		threadId: string,
+		userId: number,
+		merchantId: number
+	): Promise<StateSnapshot> {
+		return await SuperWorkflow.superGraph.getState({
+			configurable: { thread_id: threadId, user_id: userId, merchant_id: merchantId }
+		});
 	}
 
-	public async getConversationMessages(threadId: string, userId: number): Promise<BaseMessage[]> {
-		const { values }: { values?: SuperWorkflowStateType } = await this.getConversationByThreadID(threadId, userId);
+	/**
+	 * Get the conversation messages by thread_id and identity
+	 * @param threadId
+	 * @param userId
+	 * @param merchantId
+	 * @returns
+	 */
+	public async getConversationMessages(threadId: string, userId: number, merchantId: number): Promise<BaseMessage[]> {
+		const { values }: { values?: SuperWorkflowStateType } = await this.getConversationByThreadID(
+			threadId,
+			userId,
+			merchantId
+		);
+
+		if (!values || merchantId !== values.merchant_id || userId !== values.user_id) {
+			return [];
+		}
 
 		return (values ? values.conversation_messages : []) as BaseMessage[];
 	}
 
-	public async addConversationMessage(thread_id: string, message: BaseMessage): Promise<void> {
+	/**
+	 * Add messages to the conversation by thread_id
+	 * @param thread_id
+	 * @param message
+	 */
+	public async addConversationMessages(thread_id: string, messages: BaseMessage[]): Promise<void> {
 		await SuperWorkflow.superGraph.updateState(
 			{ configurable: { thread_id } },
-			{ conversation_messages: [message] }
+			{ conversation_messages: messages }
 		);
 	}
 
 	@SetSSE
 	@IsRelevant
+	/**
+	 * Stream the graph to the client via SSE
+	 */
 	public async streamGraph(
 		response: Response,
 		userInput: string,
@@ -127,10 +166,6 @@ export class SuperWorkflow {
 		userId: number,
 		threadId: string = uuidv4()
 	): Promise<void> {
-		// For test purposes
-		IS_DEV ? (userId = 10267117) : userId;
-		IS_DEV ? (merchantId = 2288) : merchantId;
-
 		const stream = await SuperWorkflow.superGraph.stream(
 			{
 				conversation_messages: [new HumanMessage({ content: userInput })],
@@ -149,12 +184,14 @@ export class SuperWorkflow {
 				const node = metadata[1]?.langgraph_node as string;
 				const graphStatus = GRAPH_STATUS_DESCRIPTION[node];
 
+				// Stream graph status description
 				if (graphStatus && prevNode !== node) {
 					prevNode = node;
 					response.write(`event: Status\n`);
 					response.write(`data: ${graphStatus} \n\n`);
 				}
 
+				// Stream final AI message
 				if ((node === 'Composer' || node === 'HumanNode') && isAIMessageChunk(metadata[0])) {
 					logger.info('Streaming AI message', { message: metadata[0].content });
 					response.write(`id: ${threadId}\n`);

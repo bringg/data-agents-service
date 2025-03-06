@@ -4,7 +4,7 @@ import * as serviceInfo from '@bringg/service/lib/serviceinfo';
 import { httpService } from './http_service';
 import { SuperWorkflow } from './services/workflow/graphs/super_graph';
 
-async function main(): Promise<void> {
+export async function main(): Promise<void> {
 	await SuperWorkflow.initialize();
 
 	httpService.start();

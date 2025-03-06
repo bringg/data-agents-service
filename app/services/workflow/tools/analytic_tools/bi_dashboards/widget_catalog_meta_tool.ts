@@ -8,7 +8,7 @@ import { getDescriptionsDict } from './utils';
 
 const toolSchema = {
 	name: 'widget_catalog_meta_tool',
-	description: 'Returns a list of widget catalog items for the “Own Fleet” dashboard (dashboardType=0).'
+	description: 'Returns a list of the available widget catalog items for all dashboards.'
 };
 
 export const _widgetCatalogMetaToolHttp = tool(async () => {
