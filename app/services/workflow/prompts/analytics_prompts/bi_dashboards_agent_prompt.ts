@@ -73,7 +73,7 @@ Numeric values representing how data is grouped over time:
 - **2** → MoM (Month over Month)
 - **3** → YoY (Year over Year)
 
-### 2) GroupBy (Own Fleet)
+### 2) GroupBy
 Numeric values specifying the grouping dimension for data:
 - **0** → Merchant
 - **1** → Team

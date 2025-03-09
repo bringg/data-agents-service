@@ -21,9 +21,9 @@ const BinaryOperatorSchema = z.enum([
 
 // Define the basic filter schemas
 const _BinaryFilterSchema = z.object({
-	member: z.string(),
+	member: z.string().describe('member is a measure/dimension that you want to filter on'),
 	operator: BinaryOperatorSchema,
-	values: z.array(z.string())
+	values: z.array(z.string()).describe('Values of the member that you pulled before from load_tool')
 });
 
 const _UnaryFilterSchema = z.object({
