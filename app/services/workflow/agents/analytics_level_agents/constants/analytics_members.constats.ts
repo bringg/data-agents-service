@@ -4,6 +4,12 @@ export const ANALYTICS_MEMBERS_DESCRIPTION = {
 	BiDashboards: `Questions regarding the operational efficiency of order fulfillment—such as how long it
    takes from order creation to delivery, the success rates of orders, and the trends in delivery performance over time.
     Additionally, it can address queries regarding driver and carrier performance, customer satisfaction metrics, cancellation reasons, cost breakdowns, and overall route and team effectiveness.
+      The BiDashboards worker uses a set of predefined widgets and metrics to answer common operational and performance questions quickly. 
+  It is best for:
+    - Aggregated data and overviews of key metrics (e.g., success rates, average durations, cost breakdowns).
+    - Quick filters and group-bys for known data points (e.g., carrier, team, timeframe).
+    - Trend analyses that already exist in out-of-the-box dashboards.
+  If a question fits into these existing widgets and does not require building a brand new query or listing raw-level records, BiDashboards is typically faster and more efficient. 
   - Examples:
   - Average order duration from start to fulfillment.
  - Total number of successfully delivered orders.
@@ -87,6 +93,12 @@ export const ANALYTICS_MEMBERS_DESCRIPTION = {
   Users can filter data by different time periods, apply custom calculations, and compare data across teams, regions, or workflows. 
   Pre-built system reports are also available for quick access to commonly requested insights. 
   The tool empowers operational teams, analysts, and managers to make data-driven decisions, identify inefficiencies, and track performance in real time.
+  The Reports worker is a more flexible, custom query builder. 
+  It is best for:
+    - Detailed, field-level data exploration that goes beyond existing dashboard widgets.
+    - Constructing new calculations or combining multiple data sources not covered in BiDashboards.
+    - Pulling detailed lists (e.g., all orders and their timestamps, who canceled each one, etc.).
+    - Fine-grained filtering that extends beyond standard filters (e.g., filtering by obscure fields or multi-step queries).
    - Examples:
      - "What was the total revenue last month?"
      - "How many deliveries were completed yesterday?"
