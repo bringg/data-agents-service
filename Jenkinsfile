@@ -43,7 +43,6 @@ pipeline {
             parallel {
                 stage('Unit') {
                     environment {
-                        CODECOV_TOKEN = 'ca32ca53-2e89-42ce-b19c-a7ee898269c1'
                         PGDATABASE    = 'postgres'
                         PGPASSWORD    = 'postgres'
                         PGUSER        = 'postgres'
