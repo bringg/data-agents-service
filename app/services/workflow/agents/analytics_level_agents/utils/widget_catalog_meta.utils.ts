@@ -1,17 +1,10 @@
 import { DashboardType, WidgetCatalogItemDto } from '@bringg/types';
-import { RunnableConfig } from '@langchain/core/runnables';
-import { tool } from '@langchain/core/tools';
 
 import { IS_DEV } from '../../../../../common/constants';
 import { SuperWorkflow } from '../../../graphs/super_graph';
-import { getDescriptionsDict } from './utils';
+import { getDescriptionsDict } from './get_descriptions_dict.utils';
 
-const toolSchema = {
-	name: 'widget_catalog_meta_tool',
-	description: 'Returns a list of the available widget catalog items for all dashboards.'
-};
-
-export const _widgetCatalogMetaToolHttp = tool(async () => {
+export const _widgetCatalogMetaHttp = async (): Promise<{ widgets: WidgetCatalogItemDto[] }> => {
 	const url = 'https://us2-admin-api.bringg.com/analytics-service/v1/dashboards/widgets-catalog-items';
 	const jwt = process.env.analyticsJWT;
 
@@ -35,15 +28,16 @@ export const _widgetCatalogMetaToolHttp = tool(async () => {
 		defaultDescription: descriptionsDict[item.defaultDescription]
 	}));
 
-	return { data: populatedDescriptionData };
-}, toolSchema);
+	return { widgets: populatedDescriptionData };
+};
 
-export const _widgetCatalogMetaToolRpc = tool(async (_, config: RunnableConfig) => {
-	const { merchant_id, user_id } = config.configurable as { merchant_id: number; user_id: number };
-
+export const _widgetCatalogMetaRpc = async (
+	merchantId: number,
+	userId: number
+): Promise<{ widgets: WidgetCatalogItemDto[] }> => {
 	const widgetCatalogItems: WidgetCatalogItemDto[] = await SuperWorkflow.rpcClient.getOwnFleetWidgetCatalogItems({
 		payload: {
-			userContext: { userId: user_id, merchantId: merchant_id },
+			userContext: { userId, merchantId },
 			dashboardType: DashboardType.Standard
 		}
 	});
@@ -55,7 +49,11 @@ export const _widgetCatalogMetaToolRpc = tool(async (_, config: RunnableConfig) 
 		defaultDescription: descriptionsDict[item.defaultDescription]
 	}));
 
-	return { data: populatedDescriptionData };
-}, toolSchema);
+	return { widgets: populatedDescriptionData };
+};
 
-export const widgetCatalogMetaTool = !IS_DEV ? _widgetCatalogMetaToolRpc : _widgetCatalogMetaToolHttp;
+export const widgetCatalogMeta = async (merchantId: number, userId: number): Promise<string> => {
+	const meta = !IS_DEV ? await _widgetCatalogMetaRpc(merchantId, userId) : await _widgetCatalogMetaHttp();
+
+	return JSON.stringify(meta);
+};

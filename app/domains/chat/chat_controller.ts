@@ -9,7 +9,7 @@ import { ContinueChatDto, NewChatDto } from './types';
 import { continueChatRules, newChatRules } from './validation/chat_validation';
 
 @Path('chat')
-// @Security('*', 'bringg-jwt')
+@Security('*', 'bringg-jwt')
 export class ChatController {
 	@Context
 	private context: ServiceContext;

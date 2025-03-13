@@ -14,10 +14,11 @@ const toolSchema = {
 		'Executes a query against the metadata. Include dimensions, measures, filters, or date range in the request body.',
 	schema: z.object({
 		query: QueryZodSchema
-	})
+	}),
+	verboseParsingErrors: true
 };
 
-export const _loadToolHttp = tool(async input => {
+export const _loadToolHttp = tool(async ({ query }) => {
 	const url = 'https://us2-admin-api.bringg.com/analytics-service/v1/query-engine/own-fleet/presto/load';
 	const jwt = process.env.analyticsJWT;
 
@@ -27,17 +28,19 @@ export const _loadToolHttp = tool(async input => {
 			Authorization: `Bearer ${jwt}`,
 			'Content-Type': 'application/json'
 		},
-		body: JSON.stringify(input)
+		body: JSON.stringify({ query })
 	});
 
 	if (!response.ok) {
-		logger.error('Error getting meta');
-		throw new Error(`HTTP error! status: ${response.status}`);
+		logger.error('Error getting reports load');
+		throw new Error(
+			`HTTP error! status: ${response.status}. You might have filled measures inside the dimensions field or vice versa. Or maybe you didn't satisfied the cube dependencies.`
+		);
 	}
 
 	const data = await response.json();
 
-	return { ...data, length: data.data.length };
+	return { ...data, length: data?.data ? data.data.length : 0 };
 }, toolSchema);
 
 const _loadToolRpc = tool(async ({ query }, config: RunnableConfig) => {
@@ -55,7 +58,7 @@ const _loadToolRpc = tool(async ({ query }, config: RunnableConfig) => {
 			return { ...queryResult.data, length: queryResult.data.length };
 		}
 	} catch (e) {
-		logger.error('Error getting meta', { error: e });
+		logger.error('Error getting reports load', { error: e });
 		throw new Error(`Error getting meta: ${e}`);
 	}
 }, toolSchema);

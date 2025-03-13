@@ -1,17 +1,10 @@
 import { logger } from '@bringg/service';
 import { CubeMetaDto } from '@bringg/types';
-import { RunnableConfig } from '@langchain/core/runnables';
-import { tool } from '@langchain/core/tools';
 
 import { IS_DEV } from '../../../../../common/constants';
 import { SuperWorkflow } from '../../../graphs/super_graph';
 
-const toolSchema = {
-	name: 'meta_tool',
-	description: 'Returns metadata about all available cubes, including the measures and dimensions they provide.'
-};
-
-const _metaToolHttp = tool(async () => {
+const _reportsMetaHttp = async () => {
 	const url = 'https://us2-admin-api.bringg.com/analytics-service/v1/query-engine/own-fleet/presto/meta';
 	const jwt = process.env.analyticsJWT;
 
@@ -28,18 +21,16 @@ const _metaToolHttp = tool(async () => {
 		throw new Error(`HTTP error! status: ${response.status}`);
 	}
 
-	const data: CubeMetaDto = await response.json();
+	const meta: CubeMetaDto = await response.json();
 
-	return data;
-}, toolSchema);
+	return meta;
+};
 
-const _metaToolRpc = tool(async (_, config: RunnableConfig) => {
-	const { merchant_id, user_id } = config.configurable as { merchant_id: number; user_id: number };
-
+const _reportsMetaRpc = async (merchantId: number, userId: number) => {
 	try {
 		const meta: CubeMetaDto = await SuperWorkflow.rpcClient.getOwnFleetPrestoDbMeta({
 			payload: {
-				userContext: { userId: user_id, merchantId: merchant_id }
+				userContext: { userId, merchantId }
 			}
 		});
 
@@ -48,6 +39,10 @@ const _metaToolRpc = tool(async (_, config: RunnableConfig) => {
 		logger.error('Error getting meta', { error: e });
 		throw new Error(`Error getting meta: ${e}`);
 	}
-}, toolSchema);
+};
 
-export const metaTool = !IS_DEV ? _metaToolRpc : _metaToolHttp;
+export const reportsMeta = async (merchantId: number, userId: number): Promise<string> => {
+	const meta = !IS_DEV ? await _reportsMetaRpc(merchantId, userId) : await _reportsMetaHttp();
+
+	return JSON.stringify(meta);
+};

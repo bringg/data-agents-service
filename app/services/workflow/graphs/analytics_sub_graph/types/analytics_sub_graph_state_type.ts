@@ -8,6 +8,7 @@ type AnalyticsAnnotationRoot = {
 	messages: BinaryOperatorAggregate<BaseMessage[], BaseMessage[]>;
 	next: BinaryOperatorAggregate<object, unknown>;
 	instructions: BinaryOperatorAggregate<string, string>;
+	tool_messages: BinaryOperatorAggregate<BaseMessage[], BaseMessage[]>;
 };
 
 export type AnalyticsGraphStateType = AnnotationRoot<AnalyticsAnnotationRoot>;
