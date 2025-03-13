@@ -2,7 +2,7 @@ import { BaseMessage } from '@langchain/core/messages';
 import { Runnable, RunnableConfig, RunnableLambda } from '@langchain/core/runnables';
 import { Annotation, END, START, StateGraph } from '@langchain/langgraph';
 
-import { biDashboardsAgent, reportsAgent } from '../../agents';
+import { analyzerAgent, biDashboardsAgent, reportsAgent } from '../../agents';
 import { ANALYTICS_MEMBERS } from '../../agents/analytics_level_agents/constants';
 import { createTeamSupervisor } from '../../agents/utils';
 import { ANALYTICS_SUPERVISOR_PROMPT } from '../../prompts';
@@ -29,6 +29,10 @@ export class AnalyticsWorkflow {
 			instructions: Annotation<string>({
 				reducer: (x, y) => y ?? x,
 				default: () => "Solve the user's question."
+			}),
+			tool_messages: Annotation<BaseMessage[]>({
+				reducer: (x, y) => x.concat(y),
+				default: () => []
 			})
 		});
 	}
@@ -49,12 +53,15 @@ export class AnalyticsWorkflow {
 			.addNode('BiDashboards', biDashboardsAgent)
 			.addNode('Reports', reportsAgent)
 			.addNode('AnalyticsSupervisor', supervisorAgent)
+			.addNode('Analyzer', analyzerAgent)
 			.addEdge('BiDashboards', 'AnalyticsSupervisor')
 			.addEdge('Reports', 'AnalyticsSupervisor')
+			.addEdge('Analyzer', 'AnalyticsSupervisor')
 			/* eslint-disable-next-line */
 			.addConditionalEdges('AnalyticsSupervisor', (x: any) => x.next, {
 				BiDashboards: 'BiDashboards',
 				Reports: 'Reports',
+				Analyzer: 'Analyzer',
 				FINISH: END
 			})
 			.addEdge(START, 'AnalyticsSupervisor');

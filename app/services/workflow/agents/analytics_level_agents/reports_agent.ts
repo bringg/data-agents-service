@@ -4,15 +4,18 @@ import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { AnalyticsWorkflowStateType } from '../../graphs/analytics_sub_graph/types';
 import { SuperWorkflow } from '../../graphs/super_graph';
 import { REPORTS_BUILDER_AGENT_PROMPT } from '../../prompts';
-import { loadTool, metaTool } from '../../tools';
+import { loadTool } from '../../tools';
 import { agentStateModifier, runAgentNode } from '../utils';
 import { ANALYTICS_MEMBERS } from './constants';
+import { reportsMeta } from './utils';
 
-export const reportsAgent = (state: AnalyticsWorkflowStateType): Promise<{ messages: BaseMessage[] }> => {
-	const stateModifier = agentStateModifier(REPORTS_BUILDER_AGENT_PROMPT, [metaTool, loadTool], ANALYTICS_MEMBERS);
+export const reportsAgent = async (state: AnalyticsWorkflowStateType): Promise<{ messages: BaseMessage[] }> => {
+	const meta = await reportsMeta(state.merchant_id, state.user_id);
+
+	const stateModifier = agentStateModifier(REPORTS_BUILDER_AGENT_PROMPT, [loadTool], ANALYTICS_MEMBERS, meta);
 	const reportsReactAgent = createReactAgent({
 		llm: SuperWorkflow.llm,
-		tools: [metaTool, loadTool],
+		tools: [loadTool],
 		stateModifier
 	});
 

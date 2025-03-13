@@ -21,9 +21,9 @@ const BinaryOperatorSchema = z.enum([
 
 // Define the basic filter schemas
 const _BinaryFilterSchema = z.object({
-	member: z.string(),
+	member: z.string().describe('member is a measure/dimension that you want to filter on'),
 	operator: BinaryOperatorSchema,
-	values: z.array(z.string())
+	values: z.array(z.string()).describe('Values of the member that you pulled before from load_tool')
 });
 
 const _UnaryFilterSchema = z.object({
@@ -49,31 +49,28 @@ const _FilterSchema: z.ZodType<Filter> =
 
 // @ts-ignore
 export const QueryZodSchema: ZodType<Query> = z.object({
-	measures: z.array(z.string()).min(0).optional(),
-	dimensions: z.array(z.string()).min(0).optional(),
-	//! GEMINI DOESN'T SUPPORT RECURSIVE SCHEMA
+	measures: z.array(z.string()).min(0).optional().describe('Cube measures from the meta_tool'),
+	dimensions: z.array(z.string()).min(0).optional().describe('Cube dimensions from the meta_tool'),
 	filters: z.array(_FilterSchema).optional(),
 	timeDimensions: z
 		.array(
 			z.object({
 				dimension: z.string(),
 				granularity: z.enum(['hour', 'day', 'week', 'month', 'year']).optional(),
-				dateRange: z.union([z.string(), z.array(z.string()).length(2)]).optional()
+				dateRange: z
+					.array(z.string())
+					.length(2)
+					.optional()
+					.describe(
+						'An array of two strings that represent days like ["2025-03-05 00:00:00", "2025-03-11 23:59:59"]'
+					)
 			})
 		)
 		.optional(),
 	segments: z.array(z.string()).min(0).optional(),
 	limit: z.number().optional(),
 	offset: z.number().optional(),
-	order: z
-		.array(z.union([z.string().describe('a dimension or a measure'), z.enum(['asc', 'desc'])]))
-		.length(2)
-		.refine(arr => typeof arr[0] === 'string', { message: 'First element must be string' })
-		.refine(arr => arr[1] === 'asc' || arr[1] === 'desc', {
-			message: "Second element must be 'asc' or 'desc'"
-		})
-		.transform(arr => [arr[0] as string, arr[1] as 'asc' | 'desc'])
-		.optional(),
+	order: z.array(z.array(z.string()).length(2)).optional(),
 	timezone: z.string().optional(),
 	renewQuery: z.boolean().optional(),
 	ungrouped: z.boolean().optional()

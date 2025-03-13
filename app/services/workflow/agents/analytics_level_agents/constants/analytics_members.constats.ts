@@ -1,16 +1,19 @@
-export const ANALYTICS_MEMBERS = ['BiDashboards', 'Reports'];
+export const ANALYTICS_MEMBERS = ['BiDashboards', 'Reports', 'Analyzer'];
 
 export const ANALYTICS_MEMBERS_DESCRIPTION = {
 	BiDashboards: `Questions regarding the operational efficiency of order fulfillment—such as how long it
    takes from order creation to delivery, the success rates of orders, and the trends in delivery performance over time.
     Additionally, it can address queries regarding driver and carrier performance, customer satisfaction metrics, cancellation reasons, cost breakdowns, and overall route and team effectiveness.
-      The BiDashboards worker uses a set of predefined widgets and metrics to answer common operational and performance questions quickly. 
-  It is best for:
+      The BiDashboards worker uses a set of predefined widgets and metrics to answer common operational and performance questions quickly.
+
+  **Best for:**
     - Aggregated data and overviews of key metrics (e.g., success rates, average durations, cost breakdowns).
     - Quick filters and group-bys for known data points (e.g., carrier, team, timeframe).
     - Trend analyses that already exist in out-of-the-box dashboards.
-  If a question fits into these existing widgets and does not require building a brand new query or listing raw-level records, BiDashboards is typically faster and more efficient. 
-  - Examples:
+
+  If a question fits into these existing widgets and does not require building a brand new query or listing raw-level records, BiDashboards is typically faster and more efficient.
+
+  **Examples of questions BiDashboards can answer:**
   - Average order duration from start to fulfillment.
  - Total number of successfully delivered orders.
  - Total number of individual customers with fulfilled orders.
@@ -18,7 +21,7 @@ export const ANALYTICS_MEMBERS_DESCRIPTION = {
  - Average travel time between start of order and its arrival at final destination.
  - Trend of total number of done orders.
  - Total value of orders.
- - Total number of teams that recieved at least one order.
+ - Total number of teams that received at least one order.
  - Trend of total number of teams that received at least one order.
  - Daily average value of fulfilled orders.
  - Comparison of total fulfilled orders between carriers.
@@ -86,20 +89,22 @@ export const ANALYTICS_MEMBERS_DESCRIPTION = {
  - Count of completed orders that did and did not meet all three compliance benchmarks relating to timing and accuracy of the deliveries.
  - Total distance traveled of all completed (ended) routes in a time period.
  - Average number of successfully delivered orders per route.
- - Average route duration from its start time to the end time of the last order (task) on the route. 
+ - Average route duration from its start time to the end time of the last order (task) on the route.
   `,
-	Reports: `The Reports Builder is a self-serve tool that allows users to create custom BI reports by dragging and dropping data fields from key operational areas such as 
-  orders, shipments, vehicles, users, and carriers. It helps answer questions about order fulfillment performance, driver and carrier efficiency, shipment tracking, and overall operational trends. 
-  Users can filter data by different time periods, apply custom calculations, and compare data across teams, regions, or workflows. 
-  Pre-built system reports are also available for quick access to commonly requested insights. 
+	Reports: `The Reports Builder is a self-serve tool that allows users to create custom BI reports by dragging and dropping data fields from key operational areas such as
+  orders, shipments, vehicles, users, and carriers. It helps answer questions about order fulfillment performance, driver and carrier efficiency, shipment tracking, and overall operational trends.
+  Users can filter data by different time periods, apply custom calculations, and compare data across teams, regions, or workflows.
+  Pre-built system reports are also available for quick access to commonly requested insights.
   The tool empowers operational teams, analysts, and managers to make data-driven decisions, identify inefficiencies, and track performance in real time.
-  The Reports worker is a more flexible, custom query builder. 
-  It is best for:
+  The Reports worker is a more flexible, custom query builder.
+
+  **Best for:**
     - Detailed, field-level data exploration that goes beyond existing dashboard widgets.
     - Constructing new calculations or combining multiple data sources not covered in BiDashboards.
     - Pulling detailed lists (e.g., all orders and their timestamps, who canceled each one, etc.).
     - Fine-grained filtering that extends beyond standard filters (e.g., filtering by obscure fields or multi-step queries).
-   - Examples:
+
+   **Examples:**
      - "What was the total revenue last month?"
      - "How many deliveries were completed yesterday?"
      - "What's the average delivery time per city?"
@@ -113,5 +118,12 @@ export const ANALYTICS_MEMBERS_DESCRIPTION = {
      - "View all orders completed over the last seven days, including their status and which drivers completed them."
      - "Time Last Time Driver Logged In"
      - "Compare the promised with the actual time the driver arrived at the customer destination."
-  `
+  `,
+	Analyzer: `The Analytics worker is responsible for combining, interpreting, and synthesizing results from other members (BiDashboards and Reports) to produce a final, cohesive answer.
+
+  **Best for:**
+  Use the Analytics worker when you have partial data or insights returned from one or more members and need to:
+  - Merge or compare them.
+  - Perform additional calculations on the returned data (e.g., ranking, cross-referencing, final aggregates).
+  - Translate multiple sub-answers into a single response for the user.`
 } as { [key in (typeof ANALYTICS_MEMBERS)[number]]: string };

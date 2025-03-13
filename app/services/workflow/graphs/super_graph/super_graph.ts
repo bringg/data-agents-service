@@ -29,11 +29,11 @@ export class SuperWorkflow {
 	private static checkpointer: RedisSaver;
 	private static GraphState: SuperGraphStateType;
 
+	public static readonly rpcClient = new AnalyticsRpcClient();
+
 	public static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
 	// openai has better results than vertex for supervising
 	public static readonly supervisorLLM = createLLM({ provider: 'openai-reasoning', model: 'o3-mini' });
-
-	public static readonly rpcClient = new AnalyticsRpcClient();
 
 	public static async initialize(): Promise<void> {
 		// Initialize GraphState
@@ -82,8 +82,10 @@ export class SuperWorkflow {
 		});
 
 		const joinGraph = RunnableLambda.from((response: AnalyticsWorkflowStateType) => {
+			const lastMessage = response.messages[response.messages.length - 1];
+
 			return {
-				messages: [response.messages[response.messages.length - 1]]
+				messages: [new HumanMessage({ content: lastMessage.content, name: 'AnalyticsTeam' })]
 			};
 		});
 
@@ -168,8 +170,8 @@ export class SuperWorkflow {
 	): Promise<void> {
 		const stream = await SuperWorkflow.superGraph.stream(
 			{
-				conversation_messages: [new HumanMessage({ content: userInput })],
-				messages: [new HumanMessage({ content: userInput })],
+				conversation_messages: [new HumanMessage({ content: userInput, name: 'User' })],
+				messages: [new HumanMessage({ content: userInput, name: 'User' })],
 				merchant_id: merchantId,
 				user_id: userId
 			},

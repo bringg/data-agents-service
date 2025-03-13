@@ -13,22 +13,32 @@ import { MessagesAnnotation } from '@langchain/langgraph';
 export const agentStateModifier = (
 	systemPrompt: string,
 	tools: StructuredToolInterface[],
-	teamMembers: string[]
+	teamMembers: string[],
+	meta?: string
 ): ((state: typeof MessagesAnnotation.State) => BaseMessage[]) => {
 	const toolNames = tools.map(t => t.name).join(', ');
 
 	const systemMsg = new SystemMessage(
-		systemPrompt +
-			'\nWork autonomously according to your specialty, using the tools available to you.' +
-			' Do not ask for clarification.' +
-			' Your other team members (and other teams) will collaborate with you with their own specialties.' +
-			` You are chosen for a reason! You are one of the following team members: ${teamMembers.join(', ')}.
+		`${systemPrompt}
+
+			Work autonomously according to your specialty, using the tools available to you.
+			 Do not ask for clarification.
+			 Your other team members (and other teams) will collaborate with you with their own specialties.
+			 You are chosen for a reason! You are one of the following team members: ${teamMembers.join(', ')}.
 			  Remember, you individually can only use these tools: ${toolNames}.
-			  n\nEnd only if you have already completed the requested task, were given a wrong task or you don't have the
+			  End only if you have already completed the requested task, were given a wrong task or you don't have the
 			  necessary knowledge in order to provide the answer. 
 			  Communicate the work completed.
 			  Current time: ${new Date().toISOString()}
-			  `
+			  
+		${
+			meta
+				? `**Metadata Message:**
+				  \`\`\`json
+				  ${meta}
+				  \`\`\``
+				: ''
+		}`
 	);
 
 	return (state: typeof MessagesAnnotation.State): BaseMessage[] => [systemMsg, ...state.messages];
