@@ -24,5 +24,10 @@ export const biDashboardsAgent = async (state: AnalyticsWorkflowStateType): Prom
 		stateModifier
 	});
 
-	return runAgentNode({ state, agent: biDashboardsReactAgent, name: 'BiDashboards' });
+	return runAgentNode({
+		state,
+		agent: biDashboardsReactAgent,
+		name: 'BiDashboards',
+		supervisorName: 'Analytics_Supervisor'
+	});
 };

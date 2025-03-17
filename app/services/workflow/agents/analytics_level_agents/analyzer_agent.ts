@@ -16,5 +16,12 @@ export const analyzerAgent = async (state: AnalyticsWorkflowStateType): Promise<
 		stateModifier
 	});
 
-	return runAgentNode({ state, agent: analyzerReactAgent, name: 'Analyzer', hasToolHistory: true, hasHistory: true });
+	return runAgentNode({
+		state,
+		agent: analyzerReactAgent,
+		name: 'Analyzer',
+		hasToolHistory: true,
+		hasHistory: true,
+		supervisorName: 'Analytics_Supervisor'
+	});
 };

@@ -19,5 +19,5 @@ export const reportsAgent = async (state: AnalyticsWorkflowStateType): Promise<{
 		stateModifier
 	});
 
-	return runAgentNode({ state, agent: reportsReactAgent, name: 'Reports' });
+	return runAgentNode({ state, agent: reportsReactAgent, name: 'Reports', supervisorName: 'Analytics_Supervisor' });
 };

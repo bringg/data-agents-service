@@ -13,19 +13,20 @@ import { Runnable } from '@langchain/core/runnables';
  * @returns An object containing the updated messages with the last message's content and the provided name.
  */
 export const runAgentNode = async (params: {
-	state: { messages: BaseMessage[]; instructions: string; tool_messages: BaseMessage[] };
+	state: { messages: BaseMessage[]; instructions: string; tool_messages?: BaseMessage[] };
 	agent: Runnable;
 	name: string;
+	supervisorName: string;
 	hasHistory?: boolean;
 	hasToolHistory?: boolean;
-}): Promise<{ messages: HumanMessage[]; tool_messages: BaseMessage[] }> => {
+}): Promise<{ messages: HumanMessage[]; tool_messages?: BaseMessage[] }> => {
 	const { state, agent, name } = params;
 
 	const result: { messages: BaseMessage[] } = await agent.invoke({
 		messages: [
 			...(params.hasHistory ? state.messages : []),
-			...(params.hasToolHistory ? state.tool_messages : []),
-			new HumanMessage({ content: state.instructions, name: 'Analytics_Supervisor' })
+			...(params.hasToolHistory && state.tool_messages ? state.tool_messages : []),
+			new HumanMessage({ content: state.instructions, name: params.supervisorName })
 		]
 	});
 
@@ -38,6 +39,6 @@ export const runAgentNode = async (params: {
 
 	return {
 		messages: [lastMessage],
-		tool_messages: toolMessages
+		...(state.tool_messages && { tool_messages: toolMessages })
 	};
 };
