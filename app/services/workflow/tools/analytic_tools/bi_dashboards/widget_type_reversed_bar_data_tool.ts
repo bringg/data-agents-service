@@ -53,6 +53,7 @@ export const widgetTypeReversedBarDataTool = tool(
 			stackedBy: z.number().int().min(0).max(10).optional(),
 			limit: z.number().optional(),
 			order: z.enum(['asc', 'desc']).optional()
-		})
+		}),
+		verboseParsingErrors: true
 	}
 );

@@ -40,6 +40,7 @@ export const widgetTypeBasicLineDataTool = tool(
 			useTimeDimension: z.boolean(),
 			groupBy: z.number().int().min(0).max(10).optional(),
 			granularity: z.number().int().min(0).max(3).optional()
-		})
+		}),
+		verboseParsingErrors: true
 	}
 );

@@ -118,6 +118,8 @@ export const ANALYTICS_MEMBERS_DESCRIPTION = {
      - "View all orders completed over the last seven days, including their status and which drivers completed them."
      - "Time Last Time Driver Logged In"
      - "Compare the promised with the actual time the driver arrived at the customer destination."
+     - "Get Driver/Team/.../ ID by name."
+     - "List all available types of Service Types."
   `,
 	Analyzer: `The Analytics worker is responsible for combining, interpreting, and synthesizing results from other members (BiDashboards and Reports) to produce a final, cohesive answer.
 

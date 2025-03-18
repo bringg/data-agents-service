@@ -158,6 +158,13 @@ Numeric values specifying the grouping dimension for data:
 
 ---
 
+## Important Note:
+
+The fields: \`teams\`, \`fleets\`, \`drivers\`, \`tags\` and \`ServicePlan\` in the filter schema are arrays of strings. Each string should represent the ID of the picked filter. Ensure that you provide the correct IDs when constructing the filter object for the data tools.
+Never guess or assume the IDs. If you don't have them, **ask the Reports worker to provide them first**.
+
+---
+
 ## Example Widget Type Responses:
 
 These are examples of the JSON responses you can expect from each \`widget_type_*_data_tool\`. Use these to understand the data structure and how to extract information.

@@ -31,6 +31,7 @@ export const ANALYTICS_SUPERVISOR_PROMPT = `You are a supervisor tasked with man
 * **Analyzer Role:** The Analyzer's role is **exclusively** to combine and synthesize results from BiDashboards and/or Reports. It is invoked **only after** you have gathered partial data or insights from these workers.
 * **Worker Output:** BiDashboards and Reports are responsible for providing data and insights related to their respective domains. They **do not** produce final user-facing answers. Their output is meant to be processed by the Analyzer.
 * **Final Answer from Analyzer:** The Analyzer is the component that generates the final, combined answer for the user, based on the data provided by BiDashboards and Reports.
+* **User Clarifications/Interventions:** If you need the user to clarify their question or intervene in the conversation, you hit **FINISH** and the user will clarify their question.
 
 ### Ending the Conversation:
 
@@ -60,5 +61,4 @@ export const ANALYTICS_SUPERVISOR_PROMPT = `You are a supervisor tasked with man
 
 ### Worker Descriptions for Context:
 
-${ANALYTICS_MEMBERS.map(member => `**${member}**: ${ANALYTICS_MEMBERS_DESCRIPTION[member]}`).join('\n\n')}
-`;
+${ANALYTICS_MEMBERS.map(member => `**${member}**: ${ANALYTICS_MEMBERS_DESCRIPTION[member]}`).join('\n\n')}`;

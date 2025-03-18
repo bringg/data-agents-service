@@ -31,6 +31,7 @@ export const widgetTypeLineDataTool = tool(
 			'Fetches analytics data for a specific widget catalog item (presented as a line chart) using filters, grouping, and time granularity as needed.',
 		schema: z.object({
 			widgetCatalogId: z.number()
-		})
+		}),
+		verboseParsingErrors: true
 	}
 );
