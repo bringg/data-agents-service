@@ -1,5 +1,5 @@
 {
-  httpServer: {
-    port: 3010,
-  }
+	httpServer: {
+		port: 3010
+	}
 }

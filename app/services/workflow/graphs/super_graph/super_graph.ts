@@ -1,130 +1,215 @@
-import { BaseMessage, HumanMessage } from '@langchain/core/messages';
-import { Annotation, StateGraph, START, END, StreamMode } from '@langchain/langgraph';
+import { logger } from '@bringg/service';
+import redis from '@bringg/service/lib/redis';
+import { AnalyticsRpcClient } from '@bringg/service-utils';
+import { BaseMessage, HumanMessage, isAIMessageChunk } from '@langchain/core/messages';
+import { RunnableLambda } from '@langchain/core/runnables';
+import { Annotation, END, START, StateGraph, StateSnapshot, StreamMode } from '@langchain/langgraph';
 import { Response } from 'express';
-import { IsRelevant } from '../../decorators';
-import { documentationAgent } from '../../agents';
-import { SuperGraphStateType } from './types';
-import { AnalyticsWorkflow } from '../analytics_sub_graph';
-import { ChatOpenAI } from '@langchain/openai';
+import { StatusCodes } from 'http-status-codes';
+import { v4 as uuidv4 } from 'uuid';
+
+import { ERRORS } from '../../../../common';
+import { composerAgent, documentationAgent } from '../../agents';
+import { humanNode } from '../../agents/human_node';
+import { SUPER_MEMBERS } from '../../agents/super_level_agents/constants';
 import { createTeamSupervisor } from '../../agents/utils';
+import { IsRelevant, SetSSE } from '../../decorators';
+import { RedisSaver } from '../../memory/short-term';
 import { MAIN_SUPERVISOR_PROMPT } from '../../prompts';
-import { SUPER_MEMBERS } from '../../agents/main_agents/constants';
+import { createLLM } from '../../utils';
+import { AnalyticsWorkflow } from '../analytics_sub_graph';
+import { AnalyticsWorkflowStateType } from '../analytics_sub_graph/types';
+import { GRAPH_STATUS_DESCRIPTION } from './constants';
+import { CompiledSuperWorkflowType, SuperGraphStateType, SuperWorkflowStateType } from './types';
 
-/**
- * The `SuperWorkflow` class is responsible for managing the workflow of the entire agents system.
- * It initializes with user input, a thread ID, and an HTTP response object.
- * The class sets up Server-Sent Events (SSE) headers for the response and provides
- * a method to stream graph events back to the client.
- *
- * @class
- * @param {string} userInput - The input provided by the user.
- * @param {string} threadId - The unique identifier for the thread.
- * @param {Response} response - The HTTP response object.
- *
- * @property {Object} options - Configuration options for the workflow.
- * @property {number} options.recursionLimit - The limit for recursion.
- * @property {'v1' | 'v2'} options.version - The version of the workflow.
- * @property {BaseMessage[]} messages - The list of messages in the workflow.
- * @property {string} threadId - The unique identifier for the thread.
- * @property {Response} response - The HTTP response object.
- *
- * @method streamGraph
- * @description Creates and compiles a StateGraph with nodes and edges,
- * then streams events from the graph, logging each event and eventually ending the response.
- * @returns {Promise<void>} A promise that resolves when the streaming is complete.
- */
 export class SuperWorkflow {
-	private readonly options = { recursionLimit: 15, /**streamMode: 'updates' as StreamMode,*/ subgraphs: true };
-	private messages: BaseMessage[] = [];
+	private readonly options = { recursionLimit: 15, subgraphs: true, streamMode: 'messages' as StreamMode };
 
-	private userInput: string;
-	private threadId: string;
-	private response: Response;
-	private merchantId: number;
-	private userId: number;
+	private static superGraph: CompiledSuperWorkflowType;
+	private static checkpointer: RedisSaver;
+	private static GraphState: SuperGraphStateType;
 
-	private readonly llm = new ChatOpenAI({
-		apiKey: process.env.OPENAI_API_KEY,
-		modelName: 'gpt-4o-mini'
-	});
+	public static readonly rpcClient = new AnalyticsRpcClient();
 
-	private GraphState: SuperGraphStateType;
+	public static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
+	// openai has better results than vertex for supervising
+	public static readonly supervisorLLM = createLLM({ provider: 'openai-reasoning', model: 'o3-mini' });
 
-	constructor(userInput: string, threadId: string, response: Response, merchantId: number, userId: number) {
-		this.messages = [new HumanMessage(userInput)];
-
-		this.threadId = threadId;
-		this.response = response;
-		this.userInput = userInput;
-		this.merchantId = merchantId;
-		this.userId = userId;
-
-		// Set SSE headers
-		this.response.setHeader('Content-Type', 'text/event-stream');
-		this.response.setHeader('Cache-Control', 'no-cache');
-		this.response.setHeader('Connection', 'keep-alive');
-
+	public static async initialize(): Promise<void> {
 		// Initialize GraphState
 		this.GraphState = Annotation.Root({
 			merchant_id: Annotation<number>,
 			user_id: Annotation<number>,
 			messages: Annotation<BaseMessage[]>({
+				reducer: (x, y) =>
+					x.length > 0 && y.length > 0 && y[y.length - 1].content === x[x.length - 1].content
+						? x
+						: x.concat(y),
+				default: () => []
+			}),
+			conversation_messages: Annotation<BaseMessage[]>({
 				reducer: (x, y) => x.concat(y),
 				default: () => []
 			}),
 			next: Annotation({
 				// The routing key; defaults to END if not set
-				reducer: (state, update) => update ?? state ?? END,
-				default: () => END
+				reducer: (state, update) => update ?? state,
+				default: () => 'Documentation'
 			}),
 			instructions: Annotation<string>({
 				reducer: (x, y) => y ?? x,
 				default: () => "Resolve the user's request."
-			}),
-			llm: Annotation<ChatOpenAI>
+			})
+		});
+
+		// Create checkpointer
+		this.checkpointer = new RedisSaver({ connection: redis.cache });
+
+		// Create super graph supervisor
+		const supervisorAgent = await createTeamSupervisor(this.supervisorLLM, MAIN_SUPERVISOR_PROMPT, SUPER_MEMBERS);
+
+		// Create analytics chain
+		const analyticsWorkflow = new AnalyticsWorkflow();
+		const analyticsSubGraph = await analyticsWorkflow.createAnalyticsGraph();
+
+		const getState = RunnableLambda.from((state: SuperWorkflowStateType) => {
+			return {
+				messages: state.messages,
+				instructions: state.instructions,
+				merchant_id: state.merchant_id,
+				user_id: state.user_id
+			};
+		});
+
+		const joinGraph = RunnableLambda.from((response: AnalyticsWorkflowStateType) => {
+			const lastMessage = response.messages[response.messages.length - 1];
+
+			return {
+				messages: [new HumanMessage({ content: lastMessage.content, name: 'AnalyticsTeam' })]
+			};
+		});
+
+		// Create and compile the graph
+		this.superGraph = new StateGraph(this.GraphState)
+			.addNode('AnalyticsTeam', getState.pipe(analyticsSubGraph).pipe(joinGraph), {})
+			.addNode('Documentation', documentationAgent)
+			.addNode('Supervisor', supervisorAgent)
+			.addNode('HumanNode', humanNode)
+			.addNode('Composer', composerAgent)
+			.addEdge('AnalyticsTeam', 'Supervisor')
+			.addEdge('Documentation', 'Supervisor')
+			/* eslint-disable-next-line */
+			.addConditionalEdges('Supervisor', (x: any) => x.next, {
+				AnalyticsTeam: 'AnalyticsTeam',
+				Documentation: 'Documentation',
+				HumanNode: 'HumanNode',
+				FINISH: 'Composer'
+			})
+			.addEdge(START, 'Supervisor')
+			.addEdge('Composer', END)
+			.compile({ checkpointer: this.checkpointer });
+	}
+
+	/**
+	 * Gets the whole graph state by thread_id and identity
+	 */
+	public async getConversationByThreadID(
+		threadId: string,
+		userId: number,
+		merchantId: number
+	): Promise<StateSnapshot> {
+		return await SuperWorkflow.superGraph.getState({
+			configurable: { thread_id: threadId, user_id: userId, merchant_id: merchantId }
 		});
 	}
 
+	/**
+	 * Get the conversation messages by thread_id and identity
+	 * @param threadId
+	 * @param userId
+	 * @param merchantId
+	 * @returns
+	 */
+	public async getConversationMessages(threadId: string, userId: number, merchantId: number): Promise<BaseMessage[]> {
+		const { values }: { values?: SuperWorkflowStateType } = await this.getConversationByThreadID(
+			threadId,
+			userId,
+			merchantId
+		);
+
+		if (!values || merchantId !== values.merchant_id || userId !== values.user_id) {
+			return [];
+		}
+
+		return (values ? values.conversation_messages : []) as BaseMessage[];
+	}
+
+	/**
+	 * Add messages to the conversation by thread_id
+	 * @param thread_id
+	 * @param message
+	 */
+	public async addConversationMessages(thread_id: string, messages: BaseMessage[]): Promise<void> {
+		await SuperWorkflow.superGraph.updateState(
+			{ configurable: { thread_id } },
+			{ conversation_messages: messages }
+		);
+	}
+
+	@SetSSE
 	@IsRelevant
-	public async streamGraph(): Promise<void> {
-		// Create main graph supervisor
-		const supervisorAgent = await createTeamSupervisor(this.llm, MAIN_SUPERVISOR_PROMPT, SUPER_MEMBERS);
-
-		// Create analytics chain
-		const analyticsWorkflow = new AnalyticsWorkflow(this.llm);
-		const analyticsSubGraph = await analyticsWorkflow.createAnalyticsGraph();
-
-		// Create and compile the graph
-		const mainGraph = new StateGraph(this.GraphState)
-			.addNode('AnalyticsTeam', analyticsSubGraph)
-			.addNode('Documentation', documentationAgent)
-			.addNode('MainSupervisor', supervisorAgent)
-			.addEdge(START, 'MainSupervisor')
-			.addEdge('AnalyticsTeam', 'MainSupervisor')
-			.addEdge('Documentation', 'MainSupervisor')
-			.addConditionalEdges('MainSupervisor', (x: any) => x.next, {
-				AnalyticsTeam: 'AnalyticsTeam',
-				Documentation: 'Documentation',
-				FINISH: END
-			})
-			.compile();
-
-		const stream = await mainGraph.stream(
+	/**
+	 * Stream the graph to the client via SSE
+	 */
+	public async streamGraph(
+		response: Response,
+		userInput: string,
+		merchantId: number,
+		userId: number,
+		threadId: string = uuidv4()
+	): Promise<void> {
+		const stream = await SuperWorkflow.superGraph.stream(
 			{
-				messages: this.messages,
-				merchant_id: this.merchantId,
-				user_id: this.userId
+				conversation_messages: [new HumanMessage({ content: userInput, name: 'User' })],
+				messages: [new HumanMessage({ content: userInput, name: 'User' })],
+				merchant_id: merchantId,
+				user_id: userId
 			},
-			this.options
+			{ ...this.options, configurable: { thread_id: threadId, user_id: userId, merchant_id: merchantId } }
 		);
 
 		// Extract graph events and stream them back
-		for await (const chunk of stream) {
-			console.log(chunk);
-			console.log('\n====\n');
-			//this.response.write(chunk)
+		try {
+			let prevNode = '';
+
+			for await (const [_, metadata] of stream) {
+				const node = metadata[1]?.langgraph_node as string;
+				const graphStatus = GRAPH_STATUS_DESCRIPTION[node];
+
+				// Stream graph status description
+				if (graphStatus && prevNode !== node) {
+					prevNode = node;
+					response.write(`event: Status\n`);
+					response.write(`data: ${graphStatus} \n\n`);
+				}
+
+				// Stream final AI message
+				if ((node === 'Composer' || node === 'HumanNode') && isAIMessageChunk(metadata[0])) {
+					logger.info('Streaming AI message', { message: metadata[0].content });
+					response.write(`id: ${threadId}\n`);
+					response.write(`event: Response\n`);
+					response.write(`data: ${metadata[0].content} \n\n`);
+				}
+			}
+		} catch (e) {
+			logger.error('Error streaming graph', { error: e });
+			response.status(StatusCodes.INTERNAL_SERVER_ERROR);
+			response.write(`event: Error\n`);
+			response.write(`data: ${ERRORS.STREAM_ERROR} \n\n`);
 		}
 
-		this.response.end();
+		response.end();
 	}
 }
+
+export const workflow = new SuperWorkflow();

@@ -1,47 +1,30 @@
+import { ReqValidator, throwProblem } from '@bringg/service';
+import { BaseMessage } from '@langchain/core/messages';
+import { StatusCodes } from 'http-status-codes';
 import { Context, GET, Path, PathParam, POST, PreProcessor, Security, ServiceContext } from 'typescript-rest';
 
-import { throwProblem, ReqValidator } from '@bringg/service';
-import { newChatRules, continueChatRules } from './validation/chat_validation';
-import { StatusCodes } from 'http-status-codes';
-
-import { v4 as uuidv4 } from 'uuid';
+import { IS_DEV } from '../../common/constants';
+import { workflow } from '../../services/workflow/graphs/super_graph';
 import { ContinueChatDto, NewChatDto } from './types';
-import { SuperWorkflow } from '../../services/workflow/graphs/super_graph';
+import { continueChatRules, newChatRules } from './validation/chat_validation';
 
-@Path('/chat')
-// @Security('*', 'bringg-jwt')
+@Path('chat')
+@Security('*', 'bringg-jwt')
 export class ChatController {
 	@Context
-	public context: ServiceContext;
+	private context: ServiceContext;
 
 	@POST
 	@Path('/')
 	@PreProcessor(ReqValidator.validate(newChatRules))
 	/**
 	 * POST /chat
-	 * Creates a new chat thread with a unique ID and the current user ID.
+	 * Creates a new chat thread.
 	 */
-	public async newChat({ initialMessage }: NewChatDto) {
-		const { merchantId, userId } = this.context.request.user || {};
+	public async newChat({ initialMessage }: NewChatDto): Promise<void> {
+		const { merchantId, userId } = this.validateUser();
 
-		// if (!userId || !merchantId) {
-		// 	throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
-		// }
-
-		const threadId = uuidv4();
-
-		//TODO - store in redis for POC [userId : {threadId, initialMessage}]
-		//TODO - store in pg for long-term
-
-		const superGraph = new SuperWorkflow(
-			initialMessage,
-			threadId,
-			this.context.response,
-			userId as number, // remove
-			merchantId as number // remove
-		);
-
-		await superGraph.streamGraph();
+		await workflow.streamGraph(this.context.response, initialMessage, merchantId as number, userId as number);
 	}
 
 	@Path(`/:threadId`)
@@ -49,30 +32,43 @@ export class ChatController {
 	@PreProcessor(ReqValidator.validate(continueChatRules))
 	/**
 	 * POST /chat/:id
-	 * Continues a given chat thread by:
-	 *  - Retrieving existing messages
-	 *  - Running them + the new message through the graph
-	 *  - Storing the new user message and the LLM response
-	 *  - Returning the latest response
+	 * Continues a given chat thread by threadId.
 	 */
-	public async continueChat(@PathParam('threadId') threadId: string, { message }: ContinueChatDto) {
-		//     const userId = this.context.request.user?.userId;
-		//     // 1) Retrieve existing conversation
-		//     const existingMessages = await db.getChatMessages(threadId);
-		//     const conversationText = existingMessages.map((m) => m.message).join('\n');
-		//     // 2) Combine with the new user message
-		//     const fullInput = `${conversationText}\nUser: ${message}`;
-		//     // 3) Start the graph from greetNode
-		//     //    We pass the combined text in. The result will come from openAiNode at the end.
-		//     const result = await graph.start(fullInput, greetNode);
-		//     // 4) Store the user's message
-		//     await db.insertChatMessage(threadId, userId, message, 'user');
-		//     // 5) Store the system/LLM response
-		//     await db.insertChatMessage(threadId, null, result, 'system');
-		//     return res.json({ response: result });
-		//   } catch (error) {
-		//     console.error('Error continuing chat:', error);
-		//     return res.status(500).json({ error: error.message });
-		//   }
+	public async continueChat(@PathParam('threadId') threadId: string, { message }: ContinueChatDto): Promise<void> {
+		const { merchantId, userId } = this.validateUser();
+
+		await workflow.streamGraph(this.context.response, message, merchantId as number, userId as number, threadId);
+	}
+
+	@Path(`/:threadId`)
+	@GET
+	/**
+	 * GET /chat/:id
+	 * Returns a given chat thread by threadId.
+	 */
+	public async getChatByThreadId(@PathParam('threadId') threadId: string): Promise<BaseMessage[]> {
+		const { merchantId, userId } = this.validateUser();
+
+		return await workflow.getConversationMessages(threadId, userId, merchantId);
+	}
+
+	/**
+	 * Validates the user and returns the userId and merchantId as numbers.
+	 * @returns { userId: number, merchantId: number }
+	 */
+	private validateUser(): { userId: number; merchantId: number } {
+		// For dev purposes
+		if (IS_DEV) {
+			return { userId: 10267117, merchantId: 2288 };
+		}
+
+		const { userId, merchantId } = this.context.request.user || {};
+
+		// eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+		if (!userId || !merchantId) {
+			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
+		}
+
+		return { userId, merchantId };
 	}
 }

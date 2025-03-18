@@ -1,17 +1,16 @@
 import { BaseMessage } from '@langchain/core/messages';
-import { BinaryOperatorAggregate, StateType, Annotation } from '@langchain/langgraph';
-import { AnnotationRoot } from '@langchain/langgraph/dist/graph';
-import { ChatOpenAI } from '@langchain/openai';
+import { Annotation, BinaryOperatorAggregate } from '@langchain/langgraph';
+import { AnnotationRoot, StateType } from '@langchain/langgraph/dist/graph';
 
 type AnalyticsAnnotationRoot = {
 	user_id: typeof Annotation<number>;
 	merchant_id: typeof Annotation<number>;
 	messages: BinaryOperatorAggregate<BaseMessage[], BaseMessage[]>;
-	next: BinaryOperatorAggregate<{}, unknown>;
+	next: BinaryOperatorAggregate<object, unknown>;
 	instructions: BinaryOperatorAggregate<string, string>;
-	llm: typeof Annotation<ChatOpenAI>;
+	tool_messages: BinaryOperatorAggregate<BaseMessage[], BaseMessage[]>;
 };
 
 export type AnalyticsGraphStateType = AnnotationRoot<AnalyticsAnnotationRoot>;
 
-export type AnalyticsMainWorkflowStateType = StateType<AnalyticsAnnotationRoot>;
+export type AnalyticsWorkflowStateType = StateType<AnalyticsAnnotationRoot>;

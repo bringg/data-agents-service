@@ -1,29 +1,23 @@
 {
-  "compilerOptions": {
-    "module": "commonjs",
-    "outDir": "dist",
-    "declaration": true,
-    "sourceMap": true,
-    "moduleResolution": "node",
-    "target": "esnext",
-    "allowSyntheticDefaultImports": true,
-    "experimentalDecorators": true,
-    "noImplicitAny": true,
-    "esModuleInterop": true,
-    "emitDecoratorMetadata": true,
-    "noImplicitThis": false,
-    "noUnusedParameters": false,
-    "noUnusedLocals": false,
-    "skipLibCheck": true,
-    "strictNullChecks": true,
-    "baseUrl": ".",
-    "resolveJsonModule": true
-  },
-  "include": [
-    "app",
-    "jest.config.integration.ts",
-    "jest.config.unit.ts",
-    "jest.config.base.ts",
-    "scripts"
-  ]
+	"compilerOptions": {
+		"module": "commonjs",
+		"outDir": "dist",
+		"declaration": true,
+		"sourceMap": true,
+		"moduleResolution": "node",
+		"target": "esnext",
+		"allowSyntheticDefaultImports": true,
+		"experimentalDecorators": true,
+		"noImplicitAny": true,
+		"esModuleInterop": true,
+		"emitDecoratorMetadata": true,
+		"noImplicitThis": false,
+		"noUnusedParameters": false,
+		"noUnusedLocals": false,
+		"skipLibCheck": true,
+		"strictNullChecks": true,
+		"baseUrl": ".",
+		"resolveJsonModule": true
+	},
+	"include": ["app", "scripts"]
 }

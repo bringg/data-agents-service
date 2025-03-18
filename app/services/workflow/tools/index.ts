@@ -1,3 +1,3 @@
-export * from './bi_dashboards_tool';
-export * from './reportsBuilderTool';
-export * from './tools.const';
+export * from './analytic_tools/analyzer';
+export * from './analytic_tools/bi_dashboards';
+export * from './analytic_tools/reports';

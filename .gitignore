@@ -1,5 +1,6 @@
 node_modules
 .tmp
+.nyc_output/
 .sass-cache
 coverage/
 app/bower_components
@@ -15,6 +16,7 @@ lib-cov
 pids
 logs
 results
+
 
 npm-debug.log
 .npmrc

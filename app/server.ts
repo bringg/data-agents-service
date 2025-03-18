@@ -2,10 +2,11 @@ import { logger } from '@bringg/service';
 import * as serviceInfo from '@bringg/service/lib/serviceinfo';
 
 import { httpService } from './http_service';
-// import { AgentsRpcService } from './core/rpc_service';
+import { SuperWorkflow } from './services/workflow/graphs/super_graph';
 
-async function main(): Promise<void> {
-	// new AgentsRpcService().initialize();
+export async function main(): Promise<void> {
+	await SuperWorkflow.initialize();
+
 	httpService.start();
 }
 

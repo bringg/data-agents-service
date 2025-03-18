@@ -1,3 +1,6 @@
+import { BaseMessage, HumanMessage } from '@langchain/core/messages';
+import { Runnable } from '@langchain/core/runnables';
+
 /**
  * Executes an agent node with the provided parameters and returns the result.
  *
@@ -5,18 +8,36 @@
  * @param params.state - The current state containing messages.
  * @param params.agent - The agent to be invoked, which implements the Runnable interface.
  * @param params.name - The name to be assigned to the last message.
+ * @param params.hasHistory - Whether the state contains history messages.
+ * @param params.hasToolHistory - Whether the state contains tool history messages.
  * @returns An object containing the updated messages with the last message's content and the provided name.
  */
-import { HumanMessage } from '@langchain/core/messages';
-import { Runnable } from '@langchain/core/runnables';
-
-export const runAgentNode = async (params: { state: any; agent: Runnable; name: string }) => {
+export const runAgentNode = async (params: {
+	state: { messages: BaseMessage[]; instructions: string; tool_messages: BaseMessage[] };
+	agent: Runnable;
+	name: string;
+	hasHistory?: boolean;
+	hasToolHistory?: boolean;
+}): Promise<{ messages: HumanMessage[]; tool_messages: BaseMessage[] }> => {
 	const { state, agent, name } = params;
-	const result = await agent.invoke({
-		messages: state.messages
+
+	const result: { messages: BaseMessage[] } = await agent.invoke({
+		messages: [
+			...(params.hasHistory ? state.messages : []),
+			...(params.hasToolHistory ? state.tool_messages : []),
+			new HumanMessage({ content: state.instructions, name: 'Analytics_Supervisor' })
+		]
 	});
-	const lastMessage = result.messages[result.messages.length - 1];
+
+	// The last three messages are the most relevant => tool_call, tool_res, ai_res
+	const lastMessages = result.messages.slice(-3);
+
+	const lastMessage = new HumanMessage({ content: lastMessages[lastMessages.length - 1].content, name });
+
+	const toolMessages = lastMessages.length === 3 ? lastMessages.slice(0, 2) : [];
+
 	return {
-		messages: [new HumanMessage({ content: lastMessage.content, name })]
+		messages: [lastMessage],
+		tool_messages: toolMessages
 	};
 };
