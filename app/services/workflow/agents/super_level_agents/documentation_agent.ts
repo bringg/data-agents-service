@@ -1,15 +1,21 @@
 import { HumanMessage } from '@langchain/core/messages';
+import { createReactAgent } from '@langchain/langgraph/prebuilt';
 
+import { SuperWorkflow } from '../../graphs/super_graph';
 import { SuperWorkflowStateType } from '../../graphs/super_graph/types';
+import { DOCUMENTATION_AGENT_PROMPT } from '../../prompts';
+import { ragFetchTool } from '../../tools/super_tools';
+import { agentStateModifier, runAgentNode } from '../utils';
+import { SUPER_MEMBERS } from './constants';
 
-export const documentationAgent = async (_state: SuperWorkflowStateType): Promise<{ messages: HumanMessage[] }> => {
-	return {
-		messages: [
-			new HumanMessage({
-				// content: 'In order to assign a delivery to a driver, you need to call the following number: 1-800-555-5555. That is it!',
-				content: 'Im afraid I dont have the answers for that. ask HumanNode for clarifications from the user',
-				name: 'DocumentationAgent'
-			})
-		]
-	};
+export const documentationAgent = async (state: SuperWorkflowStateType): Promise<{ messages: HumanMessage[] }> => {
+	const stateModifier = agentStateModifier(DOCUMENTATION_AGENT_PROMPT, [ragFetchTool], SUPER_MEMBERS);
+
+	const docsReactAgent = createReactAgent({
+		llm: SuperWorkflow.llm,
+		tools: [ragFetchTool],
+		stateModifier
+	});
+
+	return runAgentNode({ state, agent: docsReactAgent, name: 'Documentation', supervisorName: 'Supervisor' });
 };

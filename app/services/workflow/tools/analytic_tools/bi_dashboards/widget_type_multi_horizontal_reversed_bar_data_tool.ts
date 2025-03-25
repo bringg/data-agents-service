@@ -36,6 +36,7 @@ export const widgetTypeMultiHorizontalReversedBarDataTool = tool(
 			widgetCatalogId: z.number(),
 			filter: filterSchema,
 			timezone: z.string()
-		})
+		}),
+		verboseParsingErrors: true
 	}
 );

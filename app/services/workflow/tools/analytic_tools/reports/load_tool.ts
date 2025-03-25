@@ -1,12 +1,12 @@
-import { logger } from '@bringg/service';
-import { PrestoDbLoadResultDto } from '@bringg/types';
 import { RunnableConfig } from '@langchain/core/runnables';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 
 import { IS_DEV } from '../../../../../common/constants';
-import { SuperWorkflow } from '../../../graphs/super_graph';
 import { QueryZodSchema } from './schemas/load_tool_schemas';
+import { executeLoadQueryHttp } from './utils/http_utils';
+import { executeLoadQueryRpc } from './utils/rpc_utils';
+import { validateFilterValues } from './utils/validation_utils';
 
 const toolSchema = {
 	name: 'load_tool',
@@ -19,48 +19,15 @@ const toolSchema = {
 };
 
 export const _loadToolHttp = tool(async ({ query }) => {
-	const url = 'https://us2-admin-api.bringg.com/analytics-service/v1/query-engine/own-fleet/presto/load';
-	const jwt = process.env.analyticsJWT;
+	await validateFilterValues(query);
 
-	const response = await fetch(url, {
-		method: 'POST',
-		headers: {
-			Authorization: `Bearer ${jwt}`,
-			'Content-Type': 'application/json'
-		},
-		body: JSON.stringify({ query })
-	});
-
-	if (!response.ok) {
-		logger.error('Error getting reports load');
-		throw new Error(
-			`HTTP error! status: ${response.status}. You might have filled measures inside the dimensions field or vice versa. Or maybe you didn't satisfied the cube dependencies.`
-		);
-	}
-
-	const data = await response.json();
-
-	return { ...data, length: data?.data ? data.data.length : 0 };
+	return executeLoadQueryHttp(query);
 }, toolSchema);
 
 const _loadToolRpc = tool(async ({ query }, config: RunnableConfig) => {
-	const { merchant_id, user_id } = config.configurable as { merchant_id: number; user_id: number };
+	await validateFilterValues(query, config);
 
-	try {
-		const queryResult: PrestoDbLoadResultDto = await SuperWorkflow.rpcClient.ownFleetPrestoDbLoad({
-			payload: {
-				userContext: { userId: user_id, merchantId: merchant_id },
-				query
-			}
-		});
-
-		if ('data' in queryResult) {
-			return { ...queryResult.data, length: queryResult.data.length };
-		}
-	} catch (e) {
-		logger.error('Error getting reports load', { error: e });
-		throw new Error(`Error getting meta: ${e}`);
-	}
+	return executeLoadQueryRpc(query, config);
 }, toolSchema);
 
 export const loadTool = !IS_DEV ? _loadToolRpc : _loadToolHttp;

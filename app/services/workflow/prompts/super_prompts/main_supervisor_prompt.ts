@@ -1,4 +1,4 @@
-import { SUPER_MEMBERS, SUPER_MEMBERS_DESCRIPTION } from '../agents/super_level_agents/constants';
+import { SUPER_MEMBERS, SUPER_MEMBERS_DESCRIPTION } from '../../agents/super_level_agents/constants';
 
 export const MAIN_SUPERVISOR_PROMPT = `You are an expert supervisor, responsible for efficiently resolving user requests by strategically directing them to the appropriate worker from the following team: ${SUPER_MEMBERS.join(
 	', '

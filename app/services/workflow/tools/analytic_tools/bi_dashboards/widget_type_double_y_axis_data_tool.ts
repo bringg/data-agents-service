@@ -36,6 +36,7 @@ export const widgetTypeDoubleYAxisDataTool = tool(
 			widgetCatalogId: z.number(),
 			filter: filterSchema,
 			timezone: z.string()
-		})
+		}),
+		verboseParsingErrors: true
 	}
 );
