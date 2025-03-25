@@ -26,7 +26,13 @@ To get started with the `data-agents-service`, follow these steps:
 3. Run locally analytics-service and dongosolo:
     [Setup Analytics-Service locally](https://bringg.atlassian.net/wiki/spaces/PH/pages/4124966936/Setup+Analytics-Service+locally)
 
-4. Start the service:
+4. Add to env locally (.zshrc/.zsh)
+    - GCLOUD_AUTH token via terminal command "gcloud auth print-access-token"
+    - analyticsJWT token via Bringg Web
+
+5. Optional - document out the @security decorator at chat.controller 
+
+6. Start the service:
     ```sh
     npm run start-dev
     ```

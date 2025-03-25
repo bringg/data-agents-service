@@ -3,19 +3,53 @@ import { BinaryFilter, Filter, Query } from '@bringg/types';
 import { RunnableConfig } from '@langchain/core/runnables';
 
 import { IS_DEV } from '../../../../../../common/constants';
+import { DEPENDENT_CUBES } from '../constants/cube_constants';
 import { executeLoadQueryHttp } from './http_utils';
 import { executeLoadQueryRpc } from './rpc_utils';
 
 type ValidationQuery = {
 	dimensions: string[];
+	timeDimensions?: Array<{
+		dimension: string;
+		dateRange: [string, string];
+	}>;
 };
 
-type DataRow = Record<string, string>;
+type DataRow = Record<string, string | boolean | number>;
 
 /**
  * Type guard to check if a filter is a binary filter (has values)
  */
 const isBinaryFilter = (filter: Filter): filter is Extract<Filter, { values: string[] }> => 'values' in filter;
+
+/**
+ * Creates a validation query with necessary time dimensions for dependent cubes
+ * @param member - The filter member to validate
+ * @returns A validation query object with appropriate time dimensions
+ */
+const createValidationQuery = (member: string): ValidationQuery => {
+	const cube = member.split('.')[0];
+	const baseQuery: ValidationQuery = {
+		dimensions: [member]
+	};
+
+	// If querying a dependent cube, add Tasks.createdAt time dimension for the last 180 days
+	if (DEPENDENT_CUBES.includes(cube as (typeof DEPENDENT_CUBES)[number])) {
+		const today = new Date();
+		const pastDate = new Date();
+
+		pastDate.setDate(today.getDate() - 179);
+
+		baseQuery.timeDimensions = [
+			{
+				dimension: 'Tasks.createdAt',
+				dateRange: [pastDate.toISOString(), today.toISOString()]
+			}
+		];
+	}
+
+	return baseQuery;
+};
 
 /**
  * Validates a single filter's values
@@ -33,7 +67,7 @@ const validateSingleFilter = async (
 		? await executeLoadQueryHttp(validationQuery)
 		: await executeLoadQueryRpc(validationQuery, config!);
 
-	const validValues = new Set(data.data.map((row: DataRow) => row[validationQuery.dimensions[0]]));
+	const validValues = new Set(data.data.map((row: DataRow) => String(row[validationQuery.dimensions[0]])));
 
 	const filter = query.filters?.find(
 		(f: Filter) => isBinaryFilter(f) && f.member === validationQuery.dimensions[0]
@@ -50,7 +84,7 @@ const validateSingleFilter = async (
 			throw new Error(
 				`Invalid filter value for ${
 					filter.member
-				}. It seems like you're not using the 2 step process for filters.\nValid values are: ${firstTenValues.join(
+				}. It seems like you forgot using the 2 step process for filters. Here some filter values I found for you that you can use again: ${firstTenValues.join(
 					', '
 				)}${remainingText}`
 			);
@@ -71,12 +105,10 @@ export const validateFilterValues = async (query: Query, config?: RunnableConfig
 			return true;
 		}
 
-		logger.info('Creating validation queries from filters');
-
 		// Get all the filter members that are being filtered on => create a validation query object for each
 		const validationQueries = query.filters.reduce<ValidationQuery[]>((acc, filter) => {
 			if (isBinaryFilter(filter)) {
-				return [...acc, { dimensions: [filter.member] }];
+				return [...acc, createValidationQuery(filter.member)];
 			}
 
 			return acc;
@@ -87,8 +119,6 @@ export const validateFilterValues = async (query: Query, config?: RunnableConfig
 			return true;
 		}
 
-		logger.info('Validating filters in parallel');
-
 		// Create array of validation promises
 		const validationPromises = validationQueries.map(validationQuery =>
 			validateSingleFilter(validationQuery, query, config)
@@ -97,11 +127,9 @@ export const validateFilterValues = async (query: Query, config?: RunnableConfig
 		// Wait for all validations to complete
 		await Promise.all(validationPromises);
 
-		logger.info('All filters validated successfully');
-
 		return true;
 	} catch (error) {
-		logger.error('Validation failed:', { error, query });
+		logger.error(`Validation failed: ${error}`);
 		throw error;
 	}
 };

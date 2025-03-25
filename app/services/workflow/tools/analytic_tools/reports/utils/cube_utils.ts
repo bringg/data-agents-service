@@ -14,19 +14,6 @@ export const getCubeFromField = (field: string): string | null => {
 };
 
 /**
- * Gets unique cube names from an array of fields
- * @param fields - Array of field strings
- * @returns Set of unique cube names
- */
-export const getUniqueCubes = (fields: string[] | undefined): Set<string> => {
-	if (!fields) {
-		return new Set();
-	}
-
-	return new Set(fields.map(getCubeFromField).filter((cube): cube is string => cube !== null));
-};
-
-/**
  * Checks if any field in the array is from the Tasks cube
  * @param fields - Array of field strings
  * @returns true if any field starts with "Tasks."

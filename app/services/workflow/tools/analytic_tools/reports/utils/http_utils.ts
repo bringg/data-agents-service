@@ -12,21 +12,14 @@ export const executeLoadQueryHttp = async (query: Query) => {
 			Authorization: `Bearer ${jwt}`,
 			'Content-Type': 'application/json'
 		},
-		body: JSON.stringify({ query: { ...query } })
+		body: JSON.stringify({ query })
 	});
-
-	// eslint-disable-next-line no-console
-	console.log('quering...');
-	// eslint-disable-next-line no-console
-	console.log(query);
-	// eslint-disable-next-line no-console
-	console.log(JSON.stringify({ query: { ...query } }));
 
 	if (!response.ok) {
 		logger.error(`Error getting reports via presto_load, status: ${response.status}`);
 
 		throw new Error(
-			`HTTP error! status: ${response.status}. You might have filled measures inside the dimensions field or vice versa.`
+			`HTTP error! status: ${response.status}. You might have filled measures inside the dimensions field or vice versa. Or maybe you made up a field that doesn't exist.`
 		);
 	}
 
