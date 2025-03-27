@@ -7,7 +7,7 @@ import { filterSchema } from './schemas/filter_schema';
 export const widgetTypeNumberDataTool = tool(
 	async input => {
 		const { widgetCatalogId, ...body } = input;
-		const url = `https://us2-admin-api.bringg.com/analytics-service/v1/parent-app/own-fleet/dashboards/widget-type/${WidgetType.Number}/widgets-catalog-id/${widgetCatalogId}/get-data`;
+		const url = `https://${process.env.REGION}-admin-api.bringg.com/analytics-service/v1/parent-app/own-fleet/dashboards/widget-type/${WidgetType.Number}/widgets-catalog-id/${widgetCatalogId}/get-data`;
 		const jwt = process.env.analyticsJWT;
 
 		const response = await fetch(url, {

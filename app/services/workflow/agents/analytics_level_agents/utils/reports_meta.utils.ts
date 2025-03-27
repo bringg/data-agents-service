@@ -5,7 +5,7 @@ import { IS_DEV } from '../../../../../common/constants';
 import { SuperWorkflow } from '../../../graphs/super_graph';
 
 const _reportsMetaHttp = async () => {
-	const url = 'https://us2-admin-api.bringg.com/analytics-service/v1/query-engine/own-fleet/presto/meta';
+	const url = `https://${process.env.REGION}-admin-api.bringg.com/analytics-service/v1/query-engine/own-fleet/presto/meta`;
 	const jwt = process.env.analyticsJWT;
 
 	const response = await fetch(url, {

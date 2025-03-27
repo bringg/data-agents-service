@@ -42,25 +42,23 @@ To get started with the `data-agents-service`, follow these steps:
 Once the service is running, you can interact with it by sending business questions to the endpoints provided below. The service will process the questions using the LangGraph workflow and respond with answers based on the data from the analytics-service.
 
 ## Endpoints via Postman
-### Endpoints via Postman
 
-1. **POST** - `http://localhost:3010/chat`
-    - **Body**:
-    ```json
-    {
-        "initialMessage": "what is the driver with the biggest amount of completed orders according to the reports?"
-    }
-    ```
+1. **New/Continue Chat** - `GET http://localhost:3010/chat/:message?threadId=thread_id`
+   - Creates a new chat thread or continues an existing one
+   - Path Parameters:
+     - `message`: The message to send
+   - Query Parameters:
+     - `threadId`: (Optional) The ID of the chat thread to continue. If not provided, creates a new thread
 
-2. **POST** - `http://localhost:3010/chat/{thread_id}`
-    - **Body**:
-    ```json
-    {
-        "message": "I also need you to check how many drivers do I have."
-    }
-    ```
+2. **Get Chat History** - `GET http://localhost:3010/chat/history/:thread_id`
+   - Retrieves the chat history for a specific thread
+   - Path Parameters:
+     - `thread_id`: The ID of the chat thread to retrieve
 
-3. **GET** - `http://localhost:3010/chat/{thread_id}`
+3. **Test Endpoint** - `GET http://localhost:3010/chat/test`
+   - Test endpoint that returns an empty array of messages
+
+Note: The service currently has security disabled for development purposes. In production, it uses JWT authentication.
 
 ## Contributing
 

@@ -25,21 +25,30 @@ export function IsRelevant(_target: unknown, _propertyKey: string, descriptor: P
 			? await workflow.getConversationMessages(threadId, userId, merchantId)
 			: [];
 
-		const fullConversation = [...conversationHistory, new HumanMessage(question)];
+		const userMessage = new HumanMessage({
+			content: question,
+			name: 'User',
+			additional_kwargs: { timestamp: new Date().toISOString() }
+		});
+
+		const fullConversation = [...conversationHistory, userMessage];
 
 		const { isRelevant, description } = await checkQuestionRelevance(fullConversation);
 
 		if (!isRelevant && description) {
 			if (threadId) {
-				await workflow.addConversationMessages(threadId, [
-					new HumanMessage(question),
-					new HumanMessage({ content: description as string, name: 'SemanticRouter' })
+				await workflow.addConversationMessages(threadId, userId, merchantId, [
+					userMessage,
+					new HumanMessage({
+						content: description as string,
+						name: 'SemanticRouter',
+						additional_kwargs: { timestamp: new Date().toISOString() }
+					})
 				]);
 			}
-
+			response.write(`id: ${threadId}\n`);
 			response.write('event: Non-Relevant\n');
 			response.write(`data: ${description.replace(/\n/g, '')}\n\n`);
-			response.end();
 
 			return;
 		}

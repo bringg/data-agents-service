@@ -8,7 +8,7 @@ export const widgetTypeMultiHorizontalReversedBarDataTool = tool(
 	async input => {
 		const { widgetCatalogId, ...body } = input;
 
-		const url = `https://us2-admin-api.bringg.com/analytics-service/v1/parent-app/own-fleet/dashboards/widget-type/${WidgetType.MultiHorizontalReversedBarChart}/widgets-catalog-id/${widgetCatalogId}/get-data`;
+		const url = `https://${process.env.REGION}-admin-api.bringg.com/analytics-service/v1/parent-app/own-fleet/dashboards/widget-type/${WidgetType.MultiHorizontalReversedBarChart}/widgets-catalog-id/${widgetCatalogId}/get-data`;
 		const jwt = process.env.analyticsJWT;
 
 		const response = await fetch(url, {

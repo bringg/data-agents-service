@@ -1,9 +1,7 @@
 import { InteractiveClients } from '@bringg/service';
 import { BaseHttpClient } from '@bringg/test-utils';
-
-import { ChatController } from '../../../app/domains/chat/chat_controller';
-import { ContinueChatDto, NewChatDto } from '../../../app/domains/chat/types';
 import { RouteResponse } from '../../__helper__/types';
+import { ChatController } from '../../../app/domains/chat/chat_controller';
 
 interface InitParams {
 	merchantId: number;
@@ -26,15 +24,13 @@ export class ChatHttpClient extends BaseHttpClient<InitParams> {
 		return this;
 	}
 
-	public async newChat(payload: NewChatDto) {
-		return await this.axios.post<RouteResponse<ChatController, 'newChat'>>('/', payload);
+	public async newChatMessage(message: string, threadId?: string) {
+		return await this.axios.get<RouteResponse<ChatController, 'newChatMessage'>>(`/${message}`, {
+			params: { threadId }
+		});
 	}
 
-	public async continueChat(threadId: string, payload: ContinueChatDto) {
-		return await this.axios.post<RouteResponse<ChatController, 'continueChat'>>(`/${threadId}`, payload);
-	}
-
-	public async getChatByThreadId(threadId: string) {
-		return await this.axios.get<RouteResponse<ChatController, 'getChatByThreadId'>>(`/${threadId}`);
+	public async getChatHistory(threadId: string) {
+		return await this.axios.get<RouteResponse<ChatController, 'getChatByThreadId'>>(`/history/${threadId}`);
 	}
 }

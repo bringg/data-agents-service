@@ -20,7 +20,8 @@ type DataRow = Record<string, string | boolean | number>;
 /**
  * Type guard to check if a filter is a binary filter (has values)
  */
-const isBinaryFilter = (filter: Filter): filter is Extract<Filter, { values: string[] }> => 'values' in filter;
+const isBinaryFilter = (filter: Filter): filter is Extract<Filter, { values: string[] }> =>
+	'values' in filter && filter.operator === 'equals';
 
 /**
  * Creates a validation query with necessary time dimensions for dependent cubes

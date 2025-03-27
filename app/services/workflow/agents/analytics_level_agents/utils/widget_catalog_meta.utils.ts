@@ -5,7 +5,7 @@ import { SuperWorkflow } from '../../../graphs/super_graph';
 import { getDescriptionsDict } from './get_descriptions_dict.utils';
 
 export const _widgetCatalogMetaHttp = async (): Promise<{ widgets: WidgetCatalogItemDto[] }> => {
-	const url = 'https://us2-admin-api.bringg.com/analytics-service/v1/dashboards/widgets-catalog-items';
+	const url = `https://${process.env.REGION}-admin-api.bringg.com/analytics-service/v1/dashboards/widgets-catalog-items`;
 	const jwt = process.env.analyticsJWT;
 
 	const response = await fetch(url, {

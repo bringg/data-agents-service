@@ -1,7 +1,7 @@
 import { logger } from '@bringg/service';
 import { Query } from '@bringg/types';
 
-const BASE_URL = 'https://us2-admin-api.bringg.com/analytics-service/v1/query-engine/own-fleet/presto/load';
+const BASE_URL = `https://${process.env.REGION}-admin-api.bringg.com/analytics-service/v1/query-engine/own-fleet/presto/load`;
 
 export const executeLoadQueryHttp = async (query: Query) => {
 	const jwt = process.env.analyticsJWT;

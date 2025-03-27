@@ -149,9 +149,14 @@ export class SuperWorkflow {
 	 * @param thread_id
 	 * @param message
 	 */
-	public async addConversationMessages(thread_id: string, messages: BaseMessage[]): Promise<void> {
+	public async addConversationMessages(
+		thread_id: string,
+		userId: number,
+		merchantId: number,
+		messages: BaseMessage[]
+	): Promise<void> {
 		await SuperWorkflow.superGraph.updateState(
-			{ configurable: { thread_id } },
+			{ configurable: { thread_id, user_id: userId, merchant_id: merchantId } },
 			{ conversation_messages: messages }
 		);
 	}
@@ -182,6 +187,10 @@ export class SuperWorkflow {
 		try {
 			let prevNode = '';
 
+			response.write(`id: ${threadId}\n`);
+			response.write(`event: ThreadId\n`);
+			response.write(`data: ${threadId}\n\n`);
+
 			for await (const [_, metadata] of stream) {
 				const node = metadata[1]?.langgraph_node as string;
 				const graphStatus = GRAPH_STATUS_DESCRIPTION[node];
@@ -198,17 +207,15 @@ export class SuperWorkflow {
 					logger.info('Streaming AI message', { message: metadata[0].content });
 					response.write(`id: ${threadId}\n`);
 					response.write(`event: Response\n`);
-					response.write(`data: ${metadata[0].content} \n\n`);
+					response.write(`data: ${metadata[0].content}\n\n`);
 				}
 			}
 		} catch (e) {
 			logger.error('Error streaming graph', { error: e });
 			response.status(StatusCodes.INTERNAL_SERVER_ERROR);
 			response.write(`event: Error\n`);
-			response.write(`data: ${ERRORS.STREAM_ERROR} \n\n`);
+			response.write(`data: ${ERRORS.STREAM_ERROR}\n\n`);
 		}
-
-		response.end();
 	}
 }
 

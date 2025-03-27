@@ -12,6 +12,8 @@ export function SetSSE(_target: unknown, _propertyKey: string, descriptor: Prope
 		response.setHeader('Content-Type', 'text/event-stream');
 		response.setHeader('Cache-Control', 'no-cache');
 		response.setHeader('Connection', 'keep-alive');
+		response.setHeader('Access-Control-Allow-Origin', '*');
+		response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
 		return await originalMethod.apply(this, args);
 	};

@@ -79,6 +79,9 @@
 		"@langchain/google-vertexai": "^0.2.0",
 		"@langchain/langgraph": "^0.2.44",
 		"@langchain/openai": "^0.4.3",
+		"@types/cors": "^2.8.17",
+		"axios": "^1.8.4",
+		"cors": "^2.8.5",
 		"uuid": "^11.0.5"
 	}
 }
