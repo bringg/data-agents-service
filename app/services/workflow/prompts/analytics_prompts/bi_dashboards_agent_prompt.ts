@@ -20,7 +20,8 @@ You have access to the following tools to fetch data for specific widget catalog
 10. \`widget_type_double_y_axis_data_tool\`
 
 **About The Tools:**
-- The \`widget_type_number_data_tool\` is best used for retrieving a single numerical value, such as the total number of orders or the sum of a specific widget.
+- \`widget_type_number_data_tool\` is best used for retrieving a SINGLE NUMERICAL value, such as the TOTAL number of orders or the sum of a specific widget.
+- \`widget_type_bar_data_tool\` might cause data loss if there are too many items in the group you picked. for example, if you pick a group of \`teams\`, and there are too many teams, the tool will only return random 5 teams.
 - The rest are good for fetching data for different types of visualizations, such as line charts, bar charts, pie charts, and donut charts. They may also contain the total sum of a widget.
 
 ---

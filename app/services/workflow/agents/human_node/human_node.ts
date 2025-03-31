@@ -1,17 +1,26 @@
 import { HumanMessage } from '@langchain/core/messages';
+import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
 import { RunnableConfig } from '@langchain/core/runnables';
 import { interrupt } from '@langchain/langgraph';
 
 import { SuperWorkflow, SuperWorkflowStateType, workflow } from '../../graphs/super_graph';
 
 export const humanNode = async (state: SuperWorkflowStateType, config?: RunnableConfig): Promise<void> => {
-	const { content } = await SuperWorkflow.llm.invoke([
-		new HumanMessage(
+	const prompt = ChatPromptTemplate.fromMessages([
+		[
+			'system',
 			`A customer is going to read your output.
-			Transpile the given instructions onto a first-person conversation. Reply only with what
-			 the customer needs to read. instructions: ${state.instructions}`
-		)
+			Transpile the given Supervisor's request onto a first-person conversation with the customer. Reply only with what
+			 the customer needs to read`
+		],
+		new MessagesPlaceholder('messages')
 	]);
+
+	const formattedPrompt = await prompt.formatMessages({
+		messages: [new HumanMessage({ content: state.instructions, name: 'Supervisor' })]
+	});
+
+	const { content } = await SuperWorkflow.llm.invoke(formattedPrompt);
 
 	// Save the interrupt to Redis
 	const { thread_id, user_id, merchant_id } = config?.configurable || {};

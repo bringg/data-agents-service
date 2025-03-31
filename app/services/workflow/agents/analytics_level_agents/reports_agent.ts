@@ -1,23 +1,47 @@
-import { BaseMessage } from '@langchain/core/messages';
+import { BaseMessage, HumanMessage } from '@langchain/core/messages';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 
 import { AnalyticsWorkflowStateType } from '../../graphs/analytics_sub_graph/types';
 import { SuperWorkflow } from '../../graphs/super_graph';
 import { REPORTS_BUILDER_AGENT_PROMPT } from '../../prompts';
-import { loadTool } from '../../tools';
+import { last180DaysTool, loadTool } from '../../tools';
 import { agentStateModifier, runAgentNode } from '../utils';
 import { ANALYTICS_MEMBERS } from './constants';
 import { reportsMeta } from './utils';
 
 export const reportsAgent = async (state: AnalyticsWorkflowStateType): Promise<{ messages: BaseMessage[] }> => {
-	const meta = await reportsMeta(state.merchant_id, state.user_id);
+	try {
+		const meta = await reportsMeta(state.merchant_id, state.user_id);
 
-	const stateModifier = agentStateModifier(REPORTS_BUILDER_AGENT_PROMPT, [loadTool], ANALYTICS_MEMBERS, meta);
-	const reportsReactAgent = createReactAgent({
-		llm: SuperWorkflow.llm,
-		tools: [loadTool],
-		stateModifier
-	});
+		const stateModifier = agentStateModifier(
+			REPORTS_BUILDER_AGENT_PROMPT,
+			[loadTool, last180DaysTool],
+			ANALYTICS_MEMBERS,
+			meta
+		);
+		const reportsReactAgent = createReactAgent({
+			llm: SuperWorkflow.llm,
+			tools: [loadTool, last180DaysTool],
+			stateModifier
+		});
 
-	return runAgentNode({ state, agent: reportsReactAgent, name: 'Reports', supervisorName: 'Analytics_Supervisor' });
+		return runAgentNode({
+			state,
+			agent: reportsReactAgent,
+			name: 'Reports',
+			supervisorName: 'Analytics_Supervisor'
+		});
+	} catch (e) {
+		if (e instanceof Error && e.message.includes('403')) {
+			return {
+				messages: [
+					new HumanMessage({
+						content: `Current user is not authorized to access this feature. Use other agents to get the data you need.`,
+						name: 'Reports'
+					})
+				]
+			};
+		}
+		throw e;
+	}
 };

@@ -1,9 +1,11 @@
 import { logger } from '@bringg/service';
-import { Query } from '@bringg/types';
+import { DbQueryResult, PrestoDbLoadResultDto, Query } from '@bringg/types';
 
 const BASE_URL = `https://${process.env.REGION}-admin-api.bringg.com/analytics-service/v1/query-engine/own-fleet/presto/load`;
 
-export const executeLoadQueryHttp = async (query: Query) => {
+export const executeLoadQueryHttp = async (
+	query: Query
+): Promise<{ data: DbQueryResult['data']; totalRows: number; cropped: boolean; croppingReason: string | null }> => {
 	const jwt = process.env.analyticsJWT;
 
 	const response = await fetch(BASE_URL, {
@@ -16,14 +18,25 @@ export const executeLoadQueryHttp = async (query: Query) => {
 	});
 
 	if (!response.ok) {
-		logger.error(`Error getting reports via presto_load, status: ${response.status}`);
+		const error = await response.json();
 
-		throw new Error(
-			`HTTP error! status: ${response.status}. You might have filled measures inside the dimensions field or vice versa. Or maybe you made up a field that doesn't exist.`
-		);
+		logger.error(`Error getting reports via presto_load, Error: ${JSON.stringify(error)}`);
+
+		throw new Error(JSON.stringify(error));
 	}
 
-	const data = await response.json();
+	const data = (await response.json()) as PrestoDbLoadResultDto;
 
-	return { ...data, length: data?.data ? data.data.length : 0 };
+	if ('error' in data) {
+		throw new Error('The query is too complex for the presto_load endpoint.');
+	}
+
+	const totalRows = data?.data ? data.data.length : 0;
+
+	return {
+		data: totalRows > 500 ? data.data.slice(0, 500) : data.data,
+		totalRows,
+		cropped: totalRows > 500,
+		croppingReason: totalRows > 500 ? 'Too many rows, cropped to 500. Work with the first 500 rows.' : null
+	};
 };

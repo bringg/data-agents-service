@@ -1,7 +1,8 @@
 import { InteractiveClients } from '@bringg/service';
 import { BaseHttpClient } from '@bringg/test-utils';
-import { RouteResponse } from '../../__helper__/types';
+
 import { ChatController } from '../../../app/domains/chat/chat_controller';
+import { RouteResponse } from '../../__helper__/types';
 
 interface InitParams {
 	merchantId: number;

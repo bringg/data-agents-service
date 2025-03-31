@@ -32,7 +32,7 @@ export class SuperWorkflow {
 	public static readonly rpcClient = new AnalyticsRpcClient();
 
 	public static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
-	// openai has better results than vertex for supervising
+	// openai has better results rthan vertex for supervising
 	public static readonly supervisorLLM = createLLM({ provider: 'openai-reasoning', model: 'o3-mini' });
 
 	public static async initialize(): Promise<void> {

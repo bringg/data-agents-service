@@ -1,5 +1,5 @@
 import { logger } from '@bringg/service';
-import { BinaryFilter, Filter, Query } from '@bringg/types';
+import { BinaryFilter, DbQueryResultRow, Filter, Query } from '@bringg/types';
 import { RunnableConfig } from '@langchain/core/runnables';
 
 import { IS_DEV } from '../../../../../../common/constants';
@@ -14,8 +14,6 @@ type ValidationQuery = {
 		dateRange: [string, string];
 	}>;
 };
-
-type DataRow = Record<string, string | boolean | number>;
 
 /**
  * Type guard to check if a filter is a binary filter (has values)
@@ -68,7 +66,7 @@ const validateSingleFilter = async (
 		? await executeLoadQueryHttp(validationQuery)
 		: await executeLoadQueryRpc(validationQuery, config!);
 
-	const validValues = new Set(data.data.map((row: DataRow) => String(row[validationQuery.dimensions[0]])));
+	const validValues = new Set(data.data.map((row: DbQueryResultRow) => String(row[validationQuery.dimensions[0]])));
 
 	const filter = query.filters?.find(
 		(f: Filter) => isBinaryFilter(f) && f.member === validationQuery.dimensions[0]

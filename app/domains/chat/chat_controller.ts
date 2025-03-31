@@ -7,7 +7,7 @@ import { IS_DEV } from '../../common/constants';
 import { workflow } from '../../services/workflow/graphs/super_graph';
 
 @Path('chat')
-@Security('*', 'bringg-jwt')
+// @Security('*', 'bringg-jwt')
 export class ChatController {
 	@Context
 	private context: ServiceContext;

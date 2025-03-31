@@ -1,10 +1,13 @@
 import { logger } from '@bringg/service';
-import { PrestoDbLoadResultDto, Query } from '@bringg/types';
+import { DbQueryResult, PrestoDbLoadResultDto, Query } from '@bringg/types';
 import { RunnableConfig } from '@langchain/core/runnables';
 
 import { SuperWorkflow } from '../../../../graphs/super_graph';
 
-export const executeLoadQueryRpc = async (query: Query, config: RunnableConfig) => {
+export const executeLoadQueryRpc = async (
+	query: Query,
+	config: RunnableConfig
+): Promise<{ data: DbQueryResult['data']; length: number }> => {
 	const { merchant_id, user_id } = config.configurable as { merchant_id: number; user_id: number };
 
 	try {
@@ -15,9 +18,11 @@ export const executeLoadQueryRpc = async (query: Query, config: RunnableConfig) 
 			}
 		});
 
-		if ('data' in queryResult) {
-			return { ...queryResult.data, length: queryResult.data.length };
+		if ('error' in queryResult) {
+			throw new Error('The query is too complex for the presto_load endpoint.');
 		}
+
+		return { data: queryResult.data, length: queryResult.data.length };
 	} catch (e) {
 		logger.error('Error getting reports load', { error: e });
 		throw new Error(`Error getting meta: ${e}`);

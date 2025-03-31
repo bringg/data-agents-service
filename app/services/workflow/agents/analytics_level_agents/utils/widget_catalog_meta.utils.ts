@@ -4,7 +4,7 @@ import { IS_DEV } from '../../../../../common/constants';
 import { SuperWorkflow } from '../../../graphs/super_graph';
 import { getDescriptionsDict } from './get_descriptions_dict.utils';
 
-export const _widgetCatalogMetaHttp = async (): Promise<{ widgets: WidgetCatalogItemDto[] }> => {
+export const _widgetCatalogMetaHttp = async (): Promise<{ widgets: Partial<WidgetCatalogItemDto>[] }> => {
 	const url = `https://${process.env.REGION}-admin-api.bringg.com/analytics-service/v1/dashboards/widgets-catalog-items`;
 	const jwt = process.env.analyticsJWT;
 
@@ -21,20 +21,16 @@ export const _widgetCatalogMetaHttp = async (): Promise<{ widgets: WidgetCatalog
 	}
 
 	const { data } = (await response.json()) as { data: Array<WidgetCatalogItemDto> };
-	const descriptionsDict = await getDescriptionsDict();
 
-	const populatedDescriptionData = data.map(item => ({
-		...item,
-		defaultDescription: descriptionsDict[item.defaultDescription]
-	}));
+	const formattedMeta = _widgetCatalogMetaFormat(data);
 
-	return { widgets: populatedDescriptionData };
+	return formattedMeta;
 };
 
 export const _widgetCatalogMetaRpc = async (
 	merchantId: number,
 	userId: number
-): Promise<{ widgets: WidgetCatalogItemDto[] }> => {
+): Promise<{ widgets: Partial<WidgetCatalogItemDto>[] }> => {
 	const widgetCatalogItems: WidgetCatalogItemDto[] = await SuperWorkflow.rpcClient.getOwnFleetWidgetCatalogItems({
 		payload: {
 			userContext: { userId, merchantId },
@@ -42,14 +38,29 @@ export const _widgetCatalogMetaRpc = async (
 		}
 	});
 
+	const formattedMeta = _widgetCatalogMetaFormat(widgetCatalogItems);
+
+	return formattedMeta;
+};
+
+// Format the meta to be used in the widget catalog builder agent
+const _widgetCatalogMetaFormat = async (
+	widgets: WidgetCatalogItemDto[]
+): Promise<{ widgets: Partial<WidgetCatalogItemDto>[] }> => {
 	const descriptionsDict = await getDescriptionsDict();
 
-	const populatedDescriptionData = widgetCatalogItems.map(item => ({
-		...item,
-		defaultDescription: descriptionsDict[item.defaultDescription]
-	}));
+	const formattedWidgets = widgets.map(
+		({ defaultTitle, id, availableWidgetTypes, availableGroupBy, availableStackedBy, defaultDescription }) => ({
+			id,
+			defaultTitle,
+			availableWidgetTypes,
+			availableGroupBy,
+			defaultDescription: descriptionsDict[defaultDescription],
+			availableStackedBy
+		})
+	);
 
-	return { widgets: populatedDescriptionData };
+	return { widgets: formattedWidgets };
 };
 
 export const widgetCatalogMeta = async (merchantId: number, userId: number): Promise<string> => {

@@ -19,7 +19,7 @@ export const createTeamSupervisor = async (llm: ChatAI, systemPrompt: string, me
 
 	const routeTool = {
 		name: 'route',
-		description: 'Select the next role.',
+		description: 'Select the next role',
 		schema: z.object({
 			reasoning: z.string(),
 			next: z.enum(['FINISH', ...members]),
@@ -36,7 +36,7 @@ export const createTeamSupervisor = async (llm: ChatAI, systemPrompt: string, me
 		new HumanMessage(
 			`Given the conversation above, who should act next? Or should we FINISH? Select one of: ${options.join(
 				', '
-			)}`
+			)}.`
 		)
 	]);
 

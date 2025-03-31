@@ -23,7 +23,9 @@ const _reportsMetaHttp = async () => {
 
 	const meta: CubeMetaDto = await response.json();
 
-	return meta;
+	const formattedMeta = _reportsMetaFormat(meta);
+
+	return formattedMeta;
 };
 
 const _reportsMetaRpc = async (merchantId: number, userId: number) => {
@@ -34,11 +36,26 @@ const _reportsMetaRpc = async (merchantId: number, userId: number) => {
 			}
 		});
 
-		return meta;
+		const formattedMeta = _reportsMetaFormat(meta);
+
+		return formattedMeta;
 	} catch (e) {
 		logger.error('Error getting meta', { error: e });
 		throw new Error(`Error getting meta: ${e}`);
 	}
+};
+
+// Format the meta to be used in the reports builder agent
+const _reportsMetaFormat = (meta: CubeMetaDto) => {
+	const formattedMeta = meta.cubes.map(({ dimensions, measures, name, title, segments }) => ({
+		name,
+		title,
+		dimensions: dimensions.map(({ name, description }) => ({ name, description })),
+		measures: measures.map(({ name, description }) => ({ name, description })),
+		segments: segments.map(({ name, title }) => ({ name, title }))
+	}));
+
+	return formattedMeta;
 };
 
 export const reportsMeta = async (merchantId: number, userId: number): Promise<string> => {
