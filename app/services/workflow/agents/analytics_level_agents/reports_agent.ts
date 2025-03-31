@@ -10,38 +10,35 @@ import { ANALYTICS_MEMBERS } from './constants';
 import { reportsMeta } from './utils';
 
 export const reportsAgent = async (state: AnalyticsWorkflowStateType): Promise<{ messages: BaseMessage[] }> => {
-	try {
-		const meta = await reportsMeta(state.merchant_id, state.user_id);
-
-		const stateModifier = agentStateModifier(
-			REPORTS_BUILDER_AGENT_PROMPT,
-			[loadTool, last180DaysTool],
-			ANALYTICS_MEMBERS,
-			meta
-		);
-		const reportsReactAgent = createReactAgent({
-			llm: SuperWorkflow.llm,
-			tools: [loadTool, last180DaysTool],
-			stateModifier
-		});
-
-		return runAgentNode({
-			state,
-			agent: reportsReactAgent,
-			name: 'Reports',
-			supervisorName: 'Analytics_Supervisor'
-		});
-	} catch (e) {
-		if (e instanceof Error && e.message.includes('403')) {
-			return {
-				messages: [
-					new HumanMessage({
-						content: `Current user is not authorized to access this feature. Use other agents to get the data you need.`,
-						name: 'Reports'
-					})
-				]
-			};
+	const meta = await (async () => {
+		try {
+			return await reportsMeta(state.merchant_id, state.user_id);
+		} catch (e) {
+			if (e instanceof Error && e.message.includes('403')) {
+				throw new Error(
+					'Current user is not authorized to access this feature. Use other agents to get the data you need.'
+				);
+			}
+			throw e;
 		}
-		throw e;
-	}
+	})();
+
+	const stateModifier = agentStateModifier(
+		REPORTS_BUILDER_AGENT_PROMPT,
+		[loadTool, last180DaysTool],
+		ANALYTICS_MEMBERS,
+		meta
+	);
+	const reportsReactAgent = createReactAgent({
+		llm: SuperWorkflow.llm,
+		tools: [loadTool, last180DaysTool],
+		stateModifier
+	});
+
+	return runAgentNode({
+		state,
+		agent: reportsReactAgent,
+		name: 'Reports',
+		supervisorName: 'Analytics_Supervisor'
+	});
 };
