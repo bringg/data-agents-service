@@ -10,7 +10,12 @@ import { ANALYTICS_MEMBERS } from './constants';
 import { widgetCatalogMeta } from './utils';
 
 export const biDashboardsAgent = async (state: AnalyticsWorkflowStateType): Promise<{ messages: BaseMessage[] }> => {
-	const meta = await widgetCatalogMeta(state.merchant_id, state.user_id);
+	const userContext = {
+		userId: state.user_id,
+		merchantId: state.merchant_id
+	};
+
+	const meta = await widgetCatalogMeta(userContext);
 
 	const stateModifier = agentStateModifier(
 		BI_DASHBOARDS_AGENT_PROMPT,

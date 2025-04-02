@@ -1,8 +1,9 @@
-import { DashboardType, WidgetCatalogItemDto } from '@bringg/types';
+import { analyticsRpcClient } from '@bringg/service-utils';
+import { DashboardType, UserContext, WidgetCatalogItemDto } from '@bringg/types';
+import { v4 as uuidv4 } from 'uuid';
 
 import { IS_DEV } from '../../../../../common/constants';
-import { SuperWorkflow } from '../../../graphs/super_graph';
-import { getDescriptionsDict } from './get_descriptions_dict.utils';
+import { getTranslationsDict } from './get_translations_dict.utils';
 
 export const _widgetCatalogMetaHttp = async (): Promise<{ widgets: Partial<WidgetCatalogItemDto>[] }> => {
 	const url = `https://${process.env.REGION}-admin-api.bringg.com/analytics-service/v1/dashboards/widgets-catalog-items`;
@@ -28,13 +29,15 @@ export const _widgetCatalogMetaHttp = async (): Promise<{ widgets: Partial<Widge
 };
 
 export const _widgetCatalogMetaRpc = async (
-	merchantId: number,
-	userId: number
+	userContext: UserContext
 ): Promise<{ widgets: Partial<WidgetCatalogItemDto>[] }> => {
-	const widgetCatalogItems: WidgetCatalogItemDto[] = await SuperWorkflow.rpcClient.getOwnFleetWidgetCatalogItems({
+	const widgetCatalogItems: WidgetCatalogItemDto[] = await analyticsRpcClient.ownFleet.widgetCatalogItems.list({
 		payload: {
-			userContext: { userId, merchantId },
+			userContext,
 			dashboardType: DashboardType.Standard
+		},
+		options: {
+			requestId: uuidv4()
 		}
 	});
 
@@ -47,24 +50,37 @@ export const _widgetCatalogMetaRpc = async (
 const _widgetCatalogMetaFormat = async (
 	widgets: WidgetCatalogItemDto[]
 ): Promise<{ widgets: Partial<WidgetCatalogItemDto>[] }> => {
-	const descriptionsDict = await getDescriptionsDict();
+	const translationsDict = await getTranslationsDict();
 
 	const formattedWidgets = widgets.map(
-		({ defaultTitle, id, availableWidgetTypes, availableGroupBy, availableStackedBy, defaultDescription }) => ({
-			id,
+		({
 			defaultTitle,
+			id,
 			availableWidgetTypes,
 			availableGroupBy,
-			defaultDescription: descriptionsDict[defaultDescription],
-			availableStackedBy
+			availableStackedBy,
+			defaultDescription,
+			availableFilters,
+			queriesJsons,
+			defaultWidgetType
+		}) => ({
+			id,
+			title: translationsDict[defaultTitle],
+			description: translationsDict[defaultDescription],
+			availableWidgetTypes,
+			availableGroupBy,
+			availableStackedBy,
+			availableFilters,
+			queriesJsons,
+			defaultWidgetType
 		})
 	);
 
 	return { widgets: formattedWidgets };
 };
 
-export const widgetCatalogMeta = async (merchantId: number, userId: number): Promise<string> => {
-	const meta = !IS_DEV ? await _widgetCatalogMetaRpc(merchantId, userId) : await _widgetCatalogMetaHttp();
+export const widgetCatalogMeta = async (userContext: UserContext): Promise<string> => {
+	const meta = !IS_DEV ? await _widgetCatalogMetaRpc(userContext) : await _widgetCatalogMetaHttp();
 
 	return JSON.stringify(meta);
 };

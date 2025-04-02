@@ -1,12 +1,12 @@
 import { config } from '@bringg/service';
 
 /**
- * @description Fetches the descriptions for each widget catalog item from the
- * 				POEditor in order to replace all constant values inside the meta endpoint.
+ * @description Fetches the translations for each widget catalog item
+ *              in order to replace all constant values inside the meta endpoint.
  * @returns
  */
-export const getDescriptionsDict = async (): Promise<Record<string, string>> => {
-	const url = config.get('reportsDictURL');
+export const getTranslationsDict = async (): Promise<Record<string, string>> => {
+	const url = config.get('translationsDictURL');
 
 	const response = await fetch(url, {
 		method: 'GET',

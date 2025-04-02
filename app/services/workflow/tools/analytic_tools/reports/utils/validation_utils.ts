@@ -1,6 +1,5 @@
 import { logger } from '@bringg/service';
-import { BinaryFilter, DbQueryResultRow, Filter, Query } from '@bringg/types';
-import { RunnableConfig } from '@langchain/core/runnables';
+import { BinaryFilter, DbQueryResultRow, Filter, Query, UserContext } from '@bringg/types';
 
 import { IS_DEV } from '../../../../../../common/constants';
 import { DEPENDENT_CUBES } from '../constants/cube_constants';
@@ -60,11 +59,11 @@ const createValidationQuery = (member: string): ValidationQuery => {
 const validateSingleFilter = async (
 	validationQuery: ValidationQuery,
 	query: Query,
-	config?: RunnableConfig
+	userContext?: UserContext
 ): Promise<void> => {
 	const data = IS_DEV
 		? await executeLoadQueryHttp(validationQuery)
-		: await executeLoadQueryRpc(validationQuery, config!);
+		: await executeLoadQueryRpc(validationQuery, userContext!);
 
 	const validValues = new Set(data.data.map((row: DbQueryResultRow) => String(row[validationQuery.dimensions[0]])));
 
@@ -98,7 +97,7 @@ const validateSingleFilter = async (
  * @returns true if all filters are valid
  * @throws Error if any filter value is invalid
  */
-export const validateFilterValues = async (query: Query, config?: RunnableConfig): Promise<boolean> => {
+export const validateFilterValues = async (query: Query, userContext?: UserContext): Promise<boolean> => {
 	try {
 		if (!query.filters?.length) {
 			return true;
@@ -120,7 +119,7 @@ export const validateFilterValues = async (query: Query, config?: RunnableConfig
 
 		// Create array of validation promises
 		const validationPromises = validationQueries.map(validationQuery =>
-			validateSingleFilter(validationQuery, query, config)
+			validateSingleFilter(validationQuery, query, userContext)
 		);
 
 		// Wait for all validations to complete

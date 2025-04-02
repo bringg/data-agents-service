@@ -23,9 +23,9 @@ export const humanNode = async (state: SuperWorkflowStateType, config?: Runnable
 	const { content } = await SuperWorkflow.llm.invoke(formattedPrompt);
 
 	// Save the interrupt to Redis
-	const { thread_id, user_id, merchant_id } = config?.configurable || {};
+	const { thread_id } = config?.configurable || {};
 
-	workflow.addConversationMessages(thread_id, user_id, merchant_id, [
+	workflow.addConversationMessages(thread_id, state.user_id, state.merchant_id, [
 		new HumanMessage({
 			content: content,
 			name: 'HumanNode',

@@ -24,10 +24,12 @@ export const _loadToolHttp = tool(async ({ query }) => {
 	return executeLoadQueryHttp(query);
 }, toolSchema);
 
-const _loadToolRpc = tool(async ({ query }, config: RunnableConfig) => {
-	await validateFilterValues(query, config);
+const _loadToolRpc = tool(async ({ query }, { configurable }: RunnableConfig) => {
+	const { userId, merchantId } = configurable as { userId: number; merchantId: number };
 
-	return executeLoadQueryRpc(query, config);
+	await validateFilterValues(query, { userId, merchantId });
+
+	return executeLoadQueryRpc(query, { userId, merchantId });
 }, toolSchema);
 
 export const loadTool = !IS_DEV ? _loadToolRpc : _loadToolHttp;

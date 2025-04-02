@@ -1,7 +1,8 @@
 import { throwProblem } from '@bringg/service';
 import { MessageContent } from '@langchain/core/messages';
+import { Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { Context, GET, Path, PathParam, PreProcessor, QueryParam, Security, ServiceContext } from 'typescript-rest';
+import { Context, GET, Path, PathParam, QueryParam, Security, ServiceContext } from 'typescript-rest';
 
 import { IS_DEV } from '../../common/constants';
 import { workflow } from '../../services/workflow/graphs/super_graph';
@@ -23,17 +24,9 @@ export class ChatController {
 		@QueryParam('threadId') threadId: string
 	): Promise<void> {
 		const { merchantId, userId } = this.validateUser();
+		const response = this.context.response as unknown as Response;
 
-		// If threadId is provided, check if the chat exists / user owns the thread
-		if (threadId) {
-			const chat = await this.getChatByThreadId(threadId);
-
-			if (chat.length === 0) {
-				throwProblem(StatusCodes.NOT_FOUND, 'Chat not found');
-			}
-		}
-
-		await workflow.streamGraph(this.context.response, message, merchantId as number, userId as number, threadId);
+		await workflow.streamGraph(response, message, merchantId as number, userId as number, threadId);
 	}
 
 	@Path(`/history/:threadId`)
@@ -62,7 +55,7 @@ export class ChatController {
 	 */
 	private validateUser(): { userId: number; merchantId: number } {
 		// For dev purposes
-		if (IS_DEV) {
+		if (!IS_DEV) {
 			return { userId: 10267117, merchantId: 2288 };
 		}
 

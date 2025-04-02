@@ -1,8 +1,9 @@
 import { logger } from '@bringg/service';
-import { CubeMetaDto } from '@bringg/types';
+import { analyticsRpcClient } from '@bringg/service-utils';
+import { CubeMetaDto, UserContext } from '@bringg/types';
+import { v4 as uuidv4 } from 'uuid';
 
 import { IS_DEV } from '../../../../../common/constants';
-import { SuperWorkflow } from '../../../graphs/super_graph';
 
 const _reportsMetaHttp = async () => {
 	const url = `https://${process.env.REGION}-admin-api.bringg.com/analytics-service/v1/query-engine/own-fleet/presto/meta`;
@@ -28,11 +29,14 @@ const _reportsMetaHttp = async () => {
 	return formattedMeta;
 };
 
-const _reportsMetaRpc = async (merchantId: number, userId: number) => {
+const _reportsMetaRpc = async (userContext: UserContext) => {
 	try {
-		const meta: CubeMetaDto = await SuperWorkflow.rpcClient.getOwnFleetPrestoDbMeta({
+		const meta: CubeMetaDto = await analyticsRpcClient.ownFleet.prestoDb.meta({
 			payload: {
-				userContext: { userId, merchantId }
+				userContext
+			},
+			options: {
+				requestId: uuidv4()
 			}
 		});
 
@@ -50,16 +54,16 @@ const _reportsMetaFormat = (meta: CubeMetaDto) => {
 	const formattedMeta = meta.cubes.map(({ dimensions, measures, name, title, segments }) => ({
 		name,
 		title,
-		dimensions: dimensions.map(({ name, description }) => ({ name, description })),
-		measures: measures.map(({ name, description }) => ({ name, description })),
+		dimensions: dimensions.map(({ name, description, title }) => ({ name, description, title })),
+		measures: measures.map(({ name, description, title }) => ({ name, description, title })),
 		segments: segments.map(({ name, title }) => ({ name, title }))
 	}));
 
 	return formattedMeta;
 };
 
-export const reportsMeta = async (merchantId: number, userId: number): Promise<string> => {
-	const meta = !IS_DEV ? await _reportsMetaRpc(merchantId, userId) : await _reportsMetaHttp();
+export const reportsMeta = async (userContext: UserContext): Promise<string> => {
+	const meta = !IS_DEV ? await _reportsMetaRpc(userContext) : await _reportsMetaHttp();
 
 	return JSON.stringify(meta);
 };

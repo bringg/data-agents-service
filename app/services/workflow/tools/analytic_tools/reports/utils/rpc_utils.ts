@@ -1,20 +1,20 @@
 import { logger } from '@bringg/service';
-import { DbQueryResult, PrestoDbLoadResultDto, Query } from '@bringg/types';
-import { RunnableConfig } from '@langchain/core/runnables';
-
-import { SuperWorkflow } from '../../../../graphs/super_graph';
+import { analyticsRpcClient } from '@bringg/service-utils';
+import { DbQueryResult, PrestoDbLoadResultDto, Query, UserContext } from '@bringg/types';
+import { v4 as uuidv4 } from 'uuid';
 
 export const executeLoadQueryRpc = async (
 	query: Query,
-	config: RunnableConfig
+	userContext: UserContext
 ): Promise<{ data: DbQueryResult['data']; length: number }> => {
-	const { merchant_id, user_id } = config.configurable as { merchant_id: number; user_id: number };
-
 	try {
-		const queryResult: PrestoDbLoadResultDto = await SuperWorkflow.rpcClient.ownFleetPrestoDbLoad({
+		const queryResult: PrestoDbLoadResultDto = await analyticsRpcClient.ownFleet.prestoDb.load({
 			payload: {
-				userContext: { userId: user_id, merchantId: merchant_id },
+				userContext,
 				query
+			},
+			options: {
+				requestId: uuidv4()
 			}
 		});
 

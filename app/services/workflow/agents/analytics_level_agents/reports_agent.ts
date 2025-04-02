@@ -1,4 +1,4 @@
-import { BaseMessage, HumanMessage } from '@langchain/core/messages';
+import { BaseMessage } from '@langchain/core/messages';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 
 import { AnalyticsWorkflowStateType } from '../../graphs/analytics_sub_graph/types';
@@ -10,9 +10,14 @@ import { ANALYTICS_MEMBERS } from './constants';
 import { reportsMeta } from './utils';
 
 export const reportsAgent = async (state: AnalyticsWorkflowStateType): Promise<{ messages: BaseMessage[] }> => {
+	const userContext = {
+		userId: state.user_id,
+		merchantId: state.merchant_id
+	};
+
 	const meta = await (async () => {
 		try {
-			return await reportsMeta(state.merchant_id, state.user_id);
+			return await reportsMeta(userContext);
 		} catch (e) {
 			if (e instanceof Error && e.message.includes('403')) {
 				throw new Error(

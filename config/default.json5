@@ -20,7 +20,7 @@
 		projectKey: '58bd22ec88282bf529e10e6226281dbc'
 	},
 
-	reportsDictURL: 'https://app.bringg.com/apps/analytics/reports/locale/en.json',
+	translationsDictURL: 'https://app.bringg.com/apps/analytics/reports/locale/en.json',
 
 	ragParams: {
 		corpus: 'projects/439732497020/locations/us-central1/ragCorpora/7205759403792793600',
