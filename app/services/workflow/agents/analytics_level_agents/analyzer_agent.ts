@@ -9,7 +9,12 @@ import { agentStateModifier, runAgentNode } from '../utils';
 import { ANALYTICS_MEMBERS } from './constants';
 
 export const analyzerAgent = async (state: AnalyticsWorkflowStateType): Promise<{ messages: BaseMessage[] }> => {
-	const stateModifier = agentStateModifier(ANALYZER_AGENT_PROMPT, [averageTool], ANALYTICS_MEMBERS);
+	const stateModifier = agentStateModifier({
+		systemPrompt: ANALYZER_AGENT_PROMPT,
+		tools: [averageTool],
+		teamMembers: ANALYTICS_MEMBERS
+	});
+
 	const analyzerReactAgent = createReactAgent({
 		llm: SuperWorkflow.supervisorLLM,
 		tools: [averageTool],

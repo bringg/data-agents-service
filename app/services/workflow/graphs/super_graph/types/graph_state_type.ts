@@ -7,6 +7,7 @@ import { SUPER_MEMBERS } from '../../../agents/super_level_agents/constants';
 type SuperAnnotationRoot = {
 	user_id: typeof Annotation<number>;
 	merchant_id: typeof Annotation<number>;
+	time_zone: typeof Annotation<string>;
 	messages: BinaryOperatorAggregate<BaseMessage[], BaseMessage[]>;
 	// conversation messages consists of messages that only the user can see
 	conversation_messages: BinaryOperatorAggregate<BaseMessage[], BaseMessage[]>;

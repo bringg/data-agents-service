@@ -1,10 +1,11 @@
 import { throwProblem } from '@bringg/service';
+import { Merchant as MerchantModel } from '@bringg/service-data';
 import { MessageContent } from '@langchain/core/messages';
 import { Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { Context, GET, Path, PathParam, QueryParam, Security, ServiceContext } from 'typescript-rest';
 
-import { IS_DEV } from '../../common/constants';
+import { IS_DEV, IS_TEST } from '../../common/constants';
 import { workflow } from '../../services/workflow/graphs/super_graph';
 
 @Path('chat')
@@ -24,9 +25,11 @@ export class ChatController {
 		@QueryParam('threadId') threadId: string
 	): Promise<void> {
 		const { merchantId, userId } = this.validateUser();
+		const time_zone = threadId ? null : await this.getMerchantTimezone(merchantId);
+
 		const response = this.context.response as unknown as Response;
 
-		await workflow.streamGraph(response, message, merchantId as number, userId as number, threadId);
+		await workflow.streamGraph(response, message, merchantId as number, userId as number, threadId, time_zone);
 	}
 
 	@Path(`/history/:threadId`)
@@ -38,7 +41,7 @@ export class ChatController {
 	public async getChatByThreadId(
 		@PathParam('threadId') threadId: string
 	): Promise<{ content: MessageContent; name?: string }[]> {
-		const { merchantId, userId } = this.validateUser();
+		const { merchantId, userId } = await this.validateUser();
 
 		const messages = await workflow.getConversationMessages(threadId, userId, merchantId);
 
@@ -67,5 +70,20 @@ export class ChatController {
 		}
 
 		return { userId, merchantId };
+	}
+
+	private async getMerchantTimezone(merchantId: number): Promise<string> {
+		// For dev purposes
+		if (IS_DEV || IS_TEST) {
+			return 'America/New_York';
+		}
+
+		const merchant = await MerchantModel.find(merchantId);
+
+		if (!merchant) {
+			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing merchant');
+		}
+
+		return merchant.time_zone;
 	}
 }

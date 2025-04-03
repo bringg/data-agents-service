@@ -9,7 +9,12 @@ import { agentStateModifier, runAgentNode } from '../utils';
 import { SUPER_MEMBERS } from './constants';
 
 export const documentationAgent = async (state: SuperWorkflowStateType): Promise<{ messages: HumanMessage[] }> => {
-	const stateModifier = agentStateModifier(DOCUMENTATION_AGENT_PROMPT, [ragFetchTool], SUPER_MEMBERS);
+	const stateModifier = agentStateModifier({
+		systemPrompt: DOCUMENTATION_AGENT_PROMPT,
+		tools: [ragFetchTool],
+		teamMembers: SUPER_MEMBERS,
+		time_zone: state.time_zone
+	});
 
 	const docsReactAgent = createReactAgent({
 		llm: SuperWorkflow.llm,

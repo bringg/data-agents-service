@@ -17,12 +17,13 @@ export const biDashboardsAgent = async (state: AnalyticsWorkflowStateType): Prom
 
 	const meta = await widgetCatalogMeta(userContext);
 
-	const stateModifier = agentStateModifier(
-		BI_DASHBOARDS_AGENT_PROMPT,
-		[...WIDGET_DATA_TOOLS],
-		ANALYTICS_MEMBERS,
+	const stateModifier = agentStateModifier({
+		systemPrompt: BI_DASHBOARDS_AGENT_PROMPT,
+		tools: [...WIDGET_DATA_TOOLS],
+		teamMembers: ANALYTICS_MEMBERS,
+		time_zone: state.time_zone,
 		meta
-	);
+	});
 	const biDashboardsReactAgent = createReactAgent({
 		llm: SuperWorkflow.llm,
 		tools: [...WIDGET_DATA_TOOLS],

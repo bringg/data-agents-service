@@ -32,8 +32,8 @@ describe('Chat API', () => {
 			expect(res.status).equals(401);
 		});
 
-		it('GET /chat/history/:threadId should return 401 Unauthorized', async () => {
-			const res = await client.removeAuth().getChatHistory('fake-thread-id');
+		it('GET /chat/history/:message?threadId should return 401 Unauthorized', async () => {
+			const res = await client.removeAuth().getChatHistory(INITIAL_MSG, 'fake-thread-id');
 
 			expect(res.status).equals(401);
 		});
@@ -54,12 +54,6 @@ describe('Chat API', () => {
 		it('GET /chat/:message should create a new chat and return an SSE message', async () => {
 			// Send the request
 			const res = await client.newChatMessage(INITIAL_MSG);
-
-			// eslint-disable-next-line no-console
-			console.log('RESSSSSSSS');
-
-			// eslint-disable-next-line no-console
-			console.log(res);
 
 			expect(res.status).equals(200);
 			expect(res.data).includes('Yahav');

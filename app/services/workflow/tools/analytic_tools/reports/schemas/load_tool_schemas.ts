@@ -76,7 +76,7 @@ export const QueryZodSchema: ZodType<Query> = z
 		limit: z.number().optional().describe('Limit the number of rows returned by the query'),
 		offset: z.number().optional().describe('Offset the number of rows returned by the query'),
 		order: z.array(z.array(z.string()).length(2)).optional().describe('Order the rows returned by the query'),
-		timezone: z.string().optional().describe('Timezone to use for the query'),
+		timezone: z.string().describe('Timezone to use for the query'),
 		renewQuery: z.boolean().optional(),
 		ungrouped: z.boolean().optional()
 	})

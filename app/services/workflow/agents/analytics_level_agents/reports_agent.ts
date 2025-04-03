@@ -28,12 +28,13 @@ export const reportsAgent = async (state: AnalyticsWorkflowStateType): Promise<{
 		}
 	})();
 
-	const stateModifier = agentStateModifier(
-		REPORTS_BUILDER_AGENT_PROMPT,
-		[loadTool, last180DaysTool],
-		ANALYTICS_MEMBERS,
+	const stateModifier = agentStateModifier({
+		systemPrompt: REPORTS_BUILDER_AGENT_PROMPT,
+		tools: [loadTool, last180DaysTool],
+		teamMembers: ANALYTICS_MEMBERS,
+		time_zone: state.time_zone,
 		meta
-	);
+	});
 	const reportsReactAgent = createReactAgent({
 		llm: SuperWorkflow.llm,
 		tools: [loadTool, last180DaysTool],
