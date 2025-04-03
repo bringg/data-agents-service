@@ -30,7 +30,9 @@ export class SuperWorkflow {
 
 	public static readonly llm = createLLM({ provider: 'vertexai', model: 'gemini-2.0-flash' });
 	// openai has better results than vertex for supervising
-	public static readonly supervisorLLM = createLLM({ provider: 'openai-reasoning', model: 'o3-mini' });
+	public static readonly supervisorLLM = createLLM({ provider: 'openai', model: 'gpt-4o' });
+	// more temperature for user facing agents
+	public static readonly userFacingLLM = createLLM({ provider: 'openai', model: 'gpt-4o', temperature: 0.2 });
 
 	public static async initialize(): Promise<void> {
 		// Initialize GraphState

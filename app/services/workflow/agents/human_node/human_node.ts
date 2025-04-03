@@ -20,7 +20,7 @@ export const humanNode = async (state: SuperWorkflowStateType, config?: Runnable
 		messages: [new HumanMessage({ content: state.instructions, name: 'Supervisor' })]
 	});
 
-	const { content } = await SuperWorkflow.llm.invoke(formattedPrompt);
+	const { content } = await SuperWorkflow.userFacingLLM.invoke(formattedPrompt);
 
 	// Save the interrupt to Redis
 	const { thread_id } = config?.configurable || {};

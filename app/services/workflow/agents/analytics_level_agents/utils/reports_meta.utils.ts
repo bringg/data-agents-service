@@ -4,6 +4,7 @@ import { CubeMetaDto, UserContext } from '@bringg/types';
 import { v4 as uuidv4 } from 'uuid';
 
 import { IS_DEV } from '../../../../../common/constants';
+import { reportsCubeDependencies } from './reports_cube_dependencies.utils';
 
 const _reportsMetaHttp = async () => {
 	const url = `https://${process.env.REGION}-admin-api.bringg.com/analytics-service/v1/query-engine/own-fleet/presto/meta`;
@@ -24,9 +25,7 @@ const _reportsMetaHttp = async () => {
 
 	const meta: CubeMetaDto = await response.json();
 
-	const formattedMeta = _reportsMetaFormat(meta);
-
-	return formattedMeta;
+	return meta;
 };
 
 const _reportsMetaRpc = async (userContext: UserContext) => {
@@ -40,9 +39,7 @@ const _reportsMetaRpc = async (userContext: UserContext) => {
 			}
 		});
 
-		const formattedMeta = _reportsMetaFormat(meta);
-
-		return formattedMeta;
+		return meta;
 	} catch (e) {
 		logger.error('Error getting meta', { error: e });
 		throw new Error(`Error getting meta: ${e}`);
@@ -50,14 +47,75 @@ const _reportsMetaRpc = async (userContext: UserContext) => {
 };
 
 // Format the meta to be used in the reports builder agent
-const _reportsMetaFormat = (meta: CubeMetaDto) => {
-	const formattedMeta = meta.cubes.map(({ dimensions, measures, name, title, segments }) => ({
-		name,
-		title,
-		dimensions: dimensions.map(({ name, description, title }) => ({ name, description, title })),
-		measures: measures.map(({ name, description, title }) => ({ name, description, title })),
-		segments: segments.map(({ name, title }) => ({ name, title }))
-	}));
+const _reportsMetaFormat = (meta: CubeMetaDto, cubeDependencies: Record<string, string[]>) => {
+	// Create a Map for O(1) lookups of cubes by name
+	const cubesMap = new Map(meta.cubes.map(cube => [cube.name, cube]));
+
+	const formattedMeta = {
+		cubeDependencies,
+		cubes: Object.keys(cubeDependencies)
+			.map(mainCube => {
+				const cube = cubesMap.get(mainCube);
+
+				if (!cube) {
+					return null;
+				}
+
+				const dependentCubes = cubeDependencies[mainCube]
+					.map(depCubeName => {
+						const depCube = cubesMap.get(depCubeName);
+
+						if (!depCube) {
+							return null;
+						}
+
+						const { dimensions, measures, name, title, segments } = depCube;
+
+						return {
+							name,
+							title,
+							dimensions: dimensions.map(({ name, description, title }) => ({
+								name,
+								description,
+								title
+							})),
+							measures: measures.map(({ name, description, title }) => ({
+								name,
+								description,
+								title
+							})),
+							segments: segments.map(({ name, title }) => ({
+								name,
+								title
+							}))
+						};
+					})
+					.filter(Boolean);
+
+				const { dimensions, measures, name, title, segments } = cube;
+
+				return {
+					name,
+					title,
+					dimensions: dimensions.map(({ name, description, title }) => ({
+						name,
+						description,
+						title
+					})),
+					measures: measures.map(({ name, description, title }) => ({
+						name,
+						description,
+						title
+					})),
+					segments: segments.map(({ name, title }) => ({
+						name,
+						title
+					})),
+					dependentCubes
+				};
+			})
+			.filter(Boolean)
+	};
 
 	return formattedMeta;
 };
@@ -65,5 +123,9 @@ const _reportsMetaFormat = (meta: CubeMetaDto) => {
 export const reportsMeta = async (userContext: UserContext): Promise<string> => {
 	const meta = !IS_DEV ? await _reportsMetaRpc(userContext) : await _reportsMetaHttp();
 
-	return JSON.stringify(meta);
+	const cubeDependencies = await reportsCubeDependencies(userContext);
+
+	const formattedMeta = _reportsMetaFormat(meta, cubeDependencies);
+
+	return JSON.stringify(formattedMeta);
 };

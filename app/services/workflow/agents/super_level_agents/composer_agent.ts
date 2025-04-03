@@ -16,7 +16,7 @@ export const composerAgent = async (
 		messages: state.messages
 	});
 
-	const { content } = await SuperWorkflow.supervisorLLM.invoke(formattedPrompt);
+	const { content } = await SuperWorkflow.userFacingLLM.invoke(formattedPrompt);
 
 	return {
 		conversation_messages: [

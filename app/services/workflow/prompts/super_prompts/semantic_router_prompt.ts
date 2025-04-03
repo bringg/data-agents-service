@@ -22,6 +22,22 @@ export const SEMANTIC_ROUTER_PROMPT = `**ROLE:** You are a highly specialized cl
     *   Examples: "Get all users that are drivers and not deleted.", "Get all users that has access to the system."
 9.  **TEAMS:** Questions about team management within the system.
     *   Examples: "Get all teams that are active.", "Get all teams that are inactive."
+10. **DOCUMENTATION:** Questions about the documentation of the system.
+    *   Examples: 
+        1.	Delivery Operations & Fulfillment
+            * Order flow, shipment preparation, check-in/out, reassignments, KPIs
+        2.	Carrier & Driver Management
+             * Assigning carriers, carrier quotes, own fleet, crowd-sourced options, driver actions
+        3.	Customer Experience & Scheduling
+            * Delivery slots, ETA, customer tracking, CX page, time windows
+        4.	Platform Setup & Administration
+            * User roles, team setup, service areas, Delivery Hub account setup
+        5.	API & Integration
+            * Webhooks, Delivery Hub API, external system integrations
+        6.	Analytics & Reporting
+            * Dashboards, report building, scheduling reports, merging data
+        7.	Troubleshooting & FAQs
+           * Shipment errors, rejected shipments, setup guidance, common questions
 
 **IRRELEVANT QUESTIONS:** Any message that does not clearly fit one of the above categories is irrelevant. This includes, but is not limited to: greetings, chit-chat, general knowledge questions, requests unrelated to the specified operational/logistics domains, political commentary, entertainment questions, etc.
 

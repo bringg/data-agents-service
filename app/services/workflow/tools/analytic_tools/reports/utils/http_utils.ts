@@ -22,7 +22,14 @@ export const executeLoadQueryHttp = async (
 
 		logger.error(`Error getting reports via presto_load, Error: ${JSON.stringify(error)}`);
 
-		throw new Error(JSON.stringify(error));
+		throw new Error(
+			`The query is wrong. You either: 
+			1. included fields from two different main cubes 
+			2. included a dependent cube field without a main cube field. 
+			3. mixed between dimensions and measures.
+
+			Error: ${JSON.stringify(error)}`
+		);
 	}
 
 	const data = (await response.json()) as PrestoDbLoadResultDto;
