@@ -1,1 +1,1 @@
-export * from './filter_schema';
+export * from './widgets_schemas';
