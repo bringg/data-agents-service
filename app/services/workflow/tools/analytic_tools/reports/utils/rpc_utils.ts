@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 export const executeLoadQueryRpc = async (
 	query: Query,
 	userContext: UserContext
-): Promise<{ data: DbQueryResult['data']; length: number }> => {
+): Promise<{ data: DbQueryResult['data']; totalRows: number; cropped: boolean; croppingReason: string | null }> => {
 	try {
 		const queryResult: PrestoDbLoadResultDto = await analyticsRpcClient.ownFleet.prestoDb.load({
 			payload: {
@@ -22,7 +22,14 @@ export const executeLoadQueryRpc = async (
 			throw new Error('The query is too complex for the presto_load endpoint.');
 		}
 
-		return { data: queryResult.data, length: queryResult.data.length };
+		const totalRows = queryResult?.data ? queryResult.data.length : 0;
+
+		return {
+			data: queryResult.data,
+			totalRows,
+			cropped: totalRows > 500,
+			croppingReason: totalRows > 500 ? 'Too many rows, cropped to 500. Work with the first 500 rows.' : null
+		};
 	} catch (e) {
 		logger.error('Error getting reports load', { error: e });
 		throw new Error(`Error getting meta: ${e}`);
