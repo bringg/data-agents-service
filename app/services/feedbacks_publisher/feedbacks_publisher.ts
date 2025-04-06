@@ -1,6 +1,7 @@
-import { KafkaClient } from '@bringg/service-utils';
-import { AIAnalystFeedback } from '../../domains/feedback/types';
 import { config } from '@bringg/service';
+import { KafkaClient } from '@bringg/service-utils';
+
+import { AIAnalystFeedback } from '../../domains/feedback/types';
 
 export class FeedbackPublisher {
 	public static async publish(feedback: AIAnalystFeedback) {

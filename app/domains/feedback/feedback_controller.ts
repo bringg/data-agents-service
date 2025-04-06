@@ -1,23 +1,23 @@
-import { Context, POST, Path, PreProcessor, Security, ServiceContext } from 'typescript-rest';
-
-import { FeedbackPublisher } from '../../services/feedbacks_publisher/feedbacks_publisher';
 import { logger, ReqValidator } from '@bringg/service';
-import { saveFeedbackRules } from './validation/feedback_validation';
-import { UserContext } from '@bringg/types';
+import { Context, Path, POST, PreProcessor, ServiceContext } from 'typescript-rest';
+
+import { conditionalSecurity } from '../../common/utils/decorator_utils';
+import { validateUser } from '../../common/utils/user_validation';
+import { FeedbackPublisher } from '../../services/feedbacks_publisher/feedbacks_publisher';
 import { InsightFeedbackRequest } from './types';
+import { saveFeedbackRules } from './validation/feedback_validation';
 
 @Path('feedback')
-@Security('*', 'bringg-jwt')
+@conditionalSecurity()
 export class FeedbackController {
 	@Context
 	private context: ServiceContext;
 
 	@POST
-	@Security('*', 'bringg-jwt')
 	@PreProcessor(ReqValidator.validate(saveFeedbackRules))
 	@Path('/')
 	public async saveFeedback(insightFeedbackRequest: InsightFeedbackRequest) {
-		const { merchantId, userId } = this.context.request.user as UserContext;
+		const { merchantId, userId } = validateUser(this.context);
 		const requestId = this.context.request.get('x-request-id');
 
 		const logMeta = {

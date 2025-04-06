@@ -7,7 +7,7 @@ import { BI_DASHBOARDS_AGENT_PROMPT } from '../../prompts';
 import { WIDGET_DATA_TOOLS } from '../../tools';
 import { agentStateModifier, runAgentNode } from '../utils';
 import { ANALYTICS_MEMBERS } from './constants';
-import { widgetCatalogMeta } from './utils';
+import { handleUnauthorizedAccess, widgetCatalogMeta } from './utils';
 
 export const biDashboardsAgent = async (state: AnalyticsWorkflowStateType): Promise<{ messages: BaseMessage[] }> => {
 	const userContext = {
@@ -15,18 +15,7 @@ export const biDashboardsAgent = async (state: AnalyticsWorkflowStateType): Prom
 		merchantId: state.merchant_id
 	};
 
-	const meta = await (async () => {
-		try {
-			return await widgetCatalogMeta(userContext);
-		} catch (e) {
-			if (e instanceof Error && e.message.includes('403')) {
-				throw new Error(
-					'Current user is not authorized to access this feature. Use other agents to get the data you need.'
-				);
-			}
-			throw e;
-		}
-	})();
+	const meta = await handleUnauthorizedAccess(() => widgetCatalogMeta(userContext));
 
 	const stateModifier = agentStateModifier({
 		systemPrompt: BI_DASHBOARDS_AGENT_PROMPT,
