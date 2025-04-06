@@ -15,7 +15,18 @@ export const biDashboardsAgent = async (state: AnalyticsWorkflowStateType): Prom
 		merchantId: state.merchant_id
 	};
 
-	const meta = await widgetCatalogMeta(userContext);
+	const meta = await (async () => {
+		try {
+			return await widgetCatalogMeta(userContext);
+		} catch (e) {
+			if (e instanceof Error && e.message.includes('403')) {
+				throw new Error(
+					'Current user is not authorized to access this feature. Use other agents to get the data you need.'
+				);
+			}
+			throw e;
+		}
+	})();
 
 	const stateModifier = agentStateModifier({
 		systemPrompt: BI_DASHBOARDS_AGENT_PROMPT,
