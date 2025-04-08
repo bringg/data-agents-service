@@ -4,10 +4,11 @@ import { ReportCoreObject, UserContext } from '@bringg/types';
 import { v4 as uuidv4 } from 'uuid';
 
 import { IS_DEV } from '../../../../../common/constants';
+import { getAnalyticsJWT } from '../../../../../common/utils/jwt.utils';
 
 const _reportsCoreObjectsHttp = async () => {
 	const url = `https://${process.env.REGION}-admin-api.bringg.com/analytics-service/v1/reports/static/core-objects`;
-	const jwt = process.env.analyticsJWT;
+	const jwt = getAnalyticsJWT();
 
 	const response = await fetch(url, {
 		method: 'GET',

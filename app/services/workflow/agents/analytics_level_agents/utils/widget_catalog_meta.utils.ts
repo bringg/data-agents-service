@@ -3,11 +3,12 @@ import { DashboardType, UserContext, WidgetCatalogItemDto } from '@bringg/types'
 import { v4 as uuidv4 } from 'uuid';
 
 import { IS_DEV } from '../../../../../common/constants';
+import { getAnalyticsJWT } from '../../../../../common/utils/jwt.utils';
 import { getTranslationsDict } from './get_translations_dict.utils';
 
 export const _widgetCatalogMetaHttp = async (): Promise<{ widgets: Partial<WidgetCatalogItemDto>[] }> => {
 	const url = `https://${process.env.REGION}-admin-api.bringg.com/analytics-service/v1/dashboards/widgets-catalog-items`;
-	const jwt = process.env.analyticsJWT;
+	const jwt = getAnalyticsJWT();
 
 	const response = await fetch(url, {
 		method: 'GET',

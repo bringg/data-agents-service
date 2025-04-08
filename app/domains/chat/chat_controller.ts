@@ -57,7 +57,7 @@ export class ChatController {
 	private async getMerchantTimezone(merchantId: number): Promise<string> {
 		// For dev purposes
 		if (IS_DEV || IS_TEST) {
-			return 'America/New_York';
+			return process.env.REGION?.startsWith('eu') ? 'Europe/London' : 'America/New_York';
 		}
 
 		const merchant = await MerchantModel.find(merchantId);

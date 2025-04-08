@@ -22,7 +22,7 @@ export const reportsAgent = async (state: AnalyticsWorkflowStateType): Promise<{
 		tools: [loadTool, last180DaysTool],
 		teamMembers: ANALYTICS_MEMBERS,
 		time_zone: state.time_zone,
-		meta
+		meta: JSON.stringify({ cubeDependencies: meta.cubeDependencies, cubes: meta.cubes })
 	});
 	const reportsReactAgent = createReactAgent({
 		llm: SuperWorkflow.llm,
@@ -34,6 +34,7 @@ export const reportsAgent = async (state: AnalyticsWorkflowStateType): Promise<{
 		state,
 		agent: reportsReactAgent,
 		name: 'Reports',
-		supervisorName: 'Analytics_Supervisor'
+		supervisorName: 'Analytics_Supervisor',
+		meta
 	});
 };

@@ -58,8 +58,8 @@ export class AnalyticsWorkflow {
 			.addEdge('BiDashboards', 'AnalyticsSupervisor')
 			.addEdge('Reports', 'AnalyticsSupervisor')
 			.addEdge('Analyzer', 'AnalyticsSupervisor')
-			/* eslint-disable-next-line */
 			.addConditionalEdges('AnalyticsSupervisor', (x: any) => x.next, {
+				/* eslint-disable-next-line */
 				BiDashboards: 'BiDashboards',
 				Reports: 'Reports',
 				Analyzer: 'Analyzer',

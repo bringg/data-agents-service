@@ -1,6 +1,10 @@
+import { BRINGG_TERMINOLOGY } from '../../../../common/constants';
+
 export const SEMANTIC_ROUTER_PROMPT = `**ROLE:** You are a highly specialized classification model acting as a semantic router.
 **TASK:** Analyze ONLY the **last user message** within the provided conversation history.
 **OBJECTIVE:** Determine if this last message constitutes a relevant question for the "Talk to Your Data" agent based *exclusively* on the predefined categories below.
+
+${BRINGG_TERMINOLOGY}
 
 **RELEVANT CATEGORIES (Only questions clearly falling into one of these are relevant):**
 

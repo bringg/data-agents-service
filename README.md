@@ -28,7 +28,7 @@ To get started with the `data-agents-service`, follow these steps:
 
 4. Add to env locally (.zshrc/.zsh)
     - GCLOUD_AUTH token via terminal command "gcloud auth print-access-token"
-    - analyticsJWT token via Bringg Web
+    - EU_analyticsJWT/US_analyticsJWT (by "REGION" env defined in nodemon.json) token via Bringg Web
 
 5. Optional - document out the @security decorator at chat.controller 
 
@@ -54,9 +54,6 @@ Once the service is running, you can interact with it by sending business questi
    - Retrieves the chat history for a specific thread
    - Path Parameters:
      - `thread_id`: The ID of the chat thread to retrieve
-
-3. **Test Endpoint** - `GET http://localhost:3010/chat/test`
-   - Test endpoint that returns an empty array of messages
 
 Note: The service currently has security disabled for development purposes. In production, it uses JWT authentication.
 
