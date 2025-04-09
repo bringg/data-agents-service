@@ -19,6 +19,7 @@ export const REPORTS_BUILDER_AGENT_PROMPT = `You are an expert ReAct-style assis
     * **Pagination Consideration:** Be prepared to handle pagination if the dataset is potentially large. By default, aim to retrieve the entire dataset unless the user explicitly requests a sample or limited results.
 
 3. **Construct \`load_tool\` JSON Query:** Create a valid JSON payload for the \`load_tool\` based on your data retrieval plan.
+    * **Concise Query:** Keep the query concise and to the point to get an efficient response. For example, if the user asks for all completed orders, don't include dimensions like "Tasks.id" and filter by "Tasks.status" with "Completed". Just use measures like "Tasks.completedTasksCount".
     * **Dimension/Measure Separation (Critical):** Ensure dimensions are exclusively in the \`"dimensions"\` array and measures are exclusively in the \`"measures"\` array within the \`query\` object. Mixing them will cause query errors.
     * **Filter Application:**  If filters are needed, incorporate them into the \`"filters"\` array, adhering to the Two-Step Filter Verification Process.
     * **Time Dimensions:** Include appropriate \`"timeDimensions"\` if the request involves time-based filtering or data ranges. Maximum date range is 180 days.
@@ -321,7 +322,28 @@ These examples demonstrate how to structure JSON queries for various data reques
     }
 }
 
-// Example 8: Wrong query - includes fields from two different main cubes
+// Example 8: Get Team Id by Team Name
+{
+    "query": {
+        "timezone": "America/Chicago",
+        "dimensions": ["Teams.name", "Teams.id"],
+        "filters": [
+            {
+                "member": "Teams.name",
+                "operator": "contains",
+                "values": ["Lorem Ipsum"]
+            }
+        ],
+        "timeDimensions": [
+            {
+                "dimension": "Tasks.createdAt",
+                "dateRange": ["2024-10-06 00:00:00", "2025-04-06 23:59:59"]
+            }
+        ]
+    }
+}
+
+// Example 9: Wrong query - includes fields from two different main cubes
 {
   "query": {
     "dimensions": ["Tasks.createdAt", "UsersModel.name"],
@@ -332,7 +354,7 @@ These examples demonstrate how to structure JSON queries for various data reques
   }
 }
 
-// Example 9: Wrong query - querying dependent cube fields without main cube field
+// Example 10: Wrong query - querying dependent cube fields without main cube field
 {
   "query": {
     "dimensions": ["WayPoint1.name", "WayPoint2.name"],
