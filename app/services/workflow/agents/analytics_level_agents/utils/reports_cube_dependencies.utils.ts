@@ -30,10 +30,9 @@ const _reportsCoreObjectsHttp = async () => {
 
 const _reportsCoreObjectRpc = async (userContext: UserContext) => {
 	try {
-		//@ts-ignore
-		const reportCoreObjects: ReportCoreObject[] = await analyticsRpcClient.ownFleet.prestoDb.template({
+		const reportCoreObjects: ReportCoreObject[] = await analyticsRpcClient.ownFleet.report.getCoreObjectsList({
 			payload: {
-				userContext
+				merchantId: userContext.merchantId
 			},
 			options: {
 				requestId: uuidv4()
@@ -50,14 +49,11 @@ const _reportsCoreObjectRpc = async (userContext: UserContext) => {
 // Format the core objects to be used in the reports builder agent
 // The format is a record of the core object name and the cubes that are linked to it
 const _reportsCoreObjectsToCubeDependencies = (reportCoreObjects: ReportCoreObject[]): Record<string, string[]> => {
-	const formattedCoreObjects = reportCoreObjects.reduce(
-		(acc, { requiredCubes, commonCubes, linkedCubes }) => {
-			acc[requiredCubes[0]] = [...commonCubes, ...linkedCubes].filter(cube => cube !== requiredCubes[0]);
+	const formattedCoreObjects = reportCoreObjects.reduce((acc, { requiredCubes, commonCubes, linkedCubes }) => {
+		acc[requiredCubes[0]] = [...commonCubes, ...linkedCubes].filter(cube => cube !== requiredCubes[0]);
 
-			return acc;
-		},
-		{} as Record<string, string[]>
-	);
+		return acc;
+	}, {} as Record<string, string[]>);
 
 	return formattedCoreObjects;
 };

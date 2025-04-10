@@ -20,7 +20,8 @@ const filterSchema: z.ZodType<WidgetDataFilterBase> = z.object({
 	teams: z
 		.array(
 			z.string().refine(value => /^\d+$/.test(value), {
-				message: 'Team must be a numeric string that represents the team ID.'
+				message:
+					'Team must be a numeric string that represents the team ID. Use get_item_id_tool to get the team ID.'
 			})
 		)
 		.optional(),
@@ -28,7 +29,8 @@ const filterSchema: z.ZodType<WidgetDataFilterBase> = z.object({
 	drivers: z
 		.array(
 			z.string().refine(value => /^\d+$/.test(value), {
-				message: 'Driver must be a numeric string that represents the driver ID.'
+				message:
+					'Driver must be a numeric string that represents the driver ID. Use get_item_id_tool to get the driver ID.'
 			})
 		)
 		.optional(),
@@ -36,7 +38,8 @@ const filterSchema: z.ZodType<WidgetDataFilterBase> = z.object({
 	tags: z
 		.array(
 			z.string().refine(value => /^\d+$/.test(value), {
-				message: 'Tag must be a numeric string that represents the Tag ID.'
+				message:
+					'Tag must be a numeric string that represents the Tag ID. Use get_item_id_tool to get the tag ID.'
 			})
 		)
 		.optional(),
@@ -44,7 +47,8 @@ const filterSchema: z.ZodType<WidgetDataFilterBase> = z.object({
 	servicePlans: z
 		.array(
 			z.string().refine(value => /^\d+$/.test(value), {
-				message: 'ServicePlan must be a numeric string that represents the ServicePlan ID.'
+				message:
+					'ServicePlan must be a numeric string that represents the ServicePlan ID. Use get_item_id_tool to get the ServicePlan ID.'
 			})
 		)
 		.optional(),

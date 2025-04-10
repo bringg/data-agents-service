@@ -9,7 +9,9 @@ const getDateRange = () => {
 	return [startDate.toISOString().split('T')[0] + ' 00:00:00', endDate.toISOString().split('T')[0] + ' 23:59:59'];
 };
 
-export const PREDEFINED_QUERIES: Record<GetItemIdInput['type'], any> = {
+type LoadQueryType = Pick<GetItemIdInput, 'type'> & { type: 'drivers' | 'teams' };
+
+export const PREDEFINED_QUERIES: Record<LoadQueryType['type'], any> = {
 	drivers: {
 		query: {
 			dimensions: ['UsersModel.id', 'UsersModel.name'],
@@ -35,32 +37,7 @@ export const PREDEFINED_QUERIES: Record<GetItemIdInput['type'], any> = {
 					dimension: 'Tasks.createdAt',
 					dateRange: getDateRange()
 				}
-			],
-			filters: []
-		}
-	},
-	tags: {
-		query: {
-			dimensions: ['Tasks.tag', 'Tasks.tagId'],
-			timeDimensions: [
-				{
-					dimension: 'Tasks.createdAt',
-					dateRange: getDateRange()
-				}
-			],
-			filters: []
-		}
-	},
-	servicePlans: {
-		query: {
-			dimensions: ['Tasks.servicePlanName', 'Tasks.servicePlanId'],
-			timeDimensions: [
-				{
-					dimension: 'Tasks.createdAt',
-					dateRange: getDateRange()
-				}
-			],
-			filters: []
+			]
 		}
 	}
 };
