@@ -1,5 +1,5 @@
 import { throwProblem } from '@bringg/service';
-import { Merchant as MerchantModel } from '@bringg/service-data';
+import { Merchant as MerchantModel, MerchantConfiguration } from '@bringg/service-data';
 import { MessageContent } from '@langchain/core/messages';
 import { Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
@@ -27,11 +27,22 @@ export class ChatController {
 		@QueryParam('threadId') threadId: string
 	): Promise<void> {
 		const { merchantId, userId } = validateUser(this.context);
-		const time_zone = threadId ? null : await this.getMerchantTimezone(merchantId);
+
+		const [time_zone, currency] = threadId
+			? [null, null]
+			: await Promise.all([this.getMerchantTimezone(merchantId), this.getMerchantPriceCurrency(merchantId)]);
 
 		const response = this.context.response as unknown as Response;
 
-		await workflow.streamGraph(response, message, merchantId as number, userId as number, threadId, time_zone);
+		await workflow.streamGraph(
+			response,
+			message,
+			merchantId as number,
+			userId as number,
+			threadId,
+			time_zone,
+			currency
+		);
 	}
 
 	@Path(`/history/:threadId`)
@@ -67,5 +78,20 @@ export class ChatController {
 		}
 
 		return merchant.time_zone;
+	}
+
+	private async getMerchantPriceCurrency(merchantId: number): Promise<string> {
+		// For dev purposes
+		if (IS_DEV || IS_TEST) {
+			return process.env.REGION?.startsWith('eu') ? 'GBP' : 'USD';
+		}
+
+		const merchantConfiguration = await MerchantConfiguration.find(merchantId);
+
+		if (!merchantConfiguration) {
+			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing merchant configuration');
+		}
+
+		return merchantConfiguration.price_currency;
 	}
 }

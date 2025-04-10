@@ -11,7 +11,7 @@ ${BRINGG_TERMINOLOGY}
 1.  **OPERATIONAL EFFICIENCY:** Questions about improving operational performance, analyzing efficiency drops, or assessing resource allocation.
     *   Examples: "How to improve my efficiency?", "Why did my efficiency drop?", "Where should I open a new fulfillment center?"
 2.  **COST & UTILIZATION:** Questions on delivery cost metrics, vehicle utilization, cost comparisons, and resource allocation impacts.
-    *   Examples: "What is my delivery cost?", "How did my delivery cost change over time? What are the reasons for the change?", "What's my vehicle utilization? How would my delivery cost look if I added or removed a driver or vehicle?"
+    *   Examples: "What is my delivery cost?", "How did my delivery cost change over time? What are the reasons for the change?", "What's my vehicle utilization? How would my delivery cost look if I added or removed a driver or vehicle?", "What is the total revenue of orders delivered in the last month?"
 3.  **PERFORMANCE / CUSTOMER SATISFACTION:** Questions regarding delivery performance, customer experience, and on-time delivery statistics.
     *   Examples: "Do I deliver on my delivery promise?", "How fast do I deliver?", "How can I improve my delivery performance?"
 4.  **EVERYDAY MANAGEMENT (OPERATIONS):** Questions about day-to-day operational oversight, order tracking, and exception management.

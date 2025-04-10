@@ -43,6 +43,7 @@ export class SuperWorkflow {
 			merchant_id: Annotation<number>,
 			user_id: Annotation<number>,
 			time_zone: Annotation<string>,
+			currency: Annotation<string>,
 			messages: Annotation<BaseMessage[]>({
 				reducer: (x, y) =>
 					x.length > 0 && y.length > 0 && y[y.length - 1].content === x[x.length - 1].content
@@ -200,7 +201,8 @@ export class SuperWorkflow {
 		merchantId: number,
 		userId: number,
 		threadId: string = uuidv4(),
-		time_zone: string | null
+		time_zone: string | null,
+		currency: string | null
 	): Promise<void> {
 		const stream = await SuperWorkflow.superGraph.stream(
 			{
@@ -208,7 +210,8 @@ export class SuperWorkflow {
 				messages: [new HumanMessage({ content: userInput, name: 'User' })],
 				merchant_id: merchantId,
 				user_id: userId,
-				...(time_zone ? { time_zone } : {})
+				...(time_zone ? { time_zone } : {}),
+				...(currency ? { currency } : {})
 			},
 			{ ...this.options, configurable: { thread_id: threadId, userId, merchantId } }
 		);

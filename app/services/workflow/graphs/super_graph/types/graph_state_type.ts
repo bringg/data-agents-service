@@ -13,6 +13,7 @@ type SuperAnnotationRoot = {
 	conversation_messages: BinaryOperatorAggregate<BaseMessage[], BaseMessage[]>;
 	next: BinaryOperatorAggregate<object, unknown>;
 	instructions: BinaryOperatorAggregate<string, string>;
+	currency: typeof Annotation<string>;
 };
 
 export type SuperGraphStateType = AnnotationRoot<SuperAnnotationRoot>;
