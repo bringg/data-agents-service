@@ -2,6 +2,7 @@ import { logger, throwProblem } from '@bringg/service';
 import redis from '@bringg/service/lib/redis';
 import { BaseMessage, HumanMessage, isAIMessageChunk } from '@langchain/core/messages';
 import { RunnableLambda } from '@langchain/core/runnables';
+import { concat } from '@langchain/core/utils/stream';
 import { Annotation, END, START, StateGraph, StreamMode } from '@langchain/langgraph';
 import { Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
@@ -20,6 +21,7 @@ import { AnalyticsWorkflow } from '../analytics_sub_graph';
 import { AnalyticsWorkflowStateType } from '../analytics_sub_graph/types';
 import { GRAPH_STATUS_DESCRIPTION } from './constants';
 import { CompiledSuperWorkflowType, SSEEvent, SuperGraphStateType, SuperWorkflowStateType } from './types';
+import { getCurrentNodeName } from './utils';
 
 export class SuperWorkflow {
 	private readonly options = { recursionLimit: 15, subgraphs: true, streamMode: 'messages' as StreamMode };
@@ -183,13 +185,38 @@ export class SuperWorkflow {
 
 		// Extract graph events and stream them back
 		try {
-			let prevNode = '';
+			let prevNode = 'Supervisor';
+			let gathered = undefined;
 
 			this.writeToStream(response, threadId, threadId, 'ThreadId');
 
-			for await (const [_, metadata] of stream) {
-				const node = metadata[1]?.langgraph_node as string;
+			for await (const [nodes, metadata] of stream) {
+				const node = getCurrentNodeName(nodes);
 				const graphStatus = GRAPH_STATUS_DESCRIPTION[node];
+
+				// Gather content from both supervisor types
+				if (
+					(node === 'Supervisor' && prevNode === 'Supervisor') ||
+					(node === 'AnalyticsSupervisor' && prevNode === 'AnalyticsSupervisor')
+				) {
+					gathered = gathered !== undefined ? concat(gathered, metadata[0]) : metadata[0];
+				}
+
+				// Stream supervisor outputs when switching to a different node
+				if (
+					gathered &&
+					(prevNode === 'Supervisor' || prevNode === 'AnalyticsSupervisor') &&
+					node !== prevNode
+				) {
+					logger.info('Streaming Supervisor message', { message: gathered.tool_calls[0].args.statusMessage });
+					this.writeToStream(
+						response,
+						threadId,
+						gathered.tool_calls[0].args.statusMessage,
+						'Status-Description'
+					);
+					gathered = undefined;
+				}
 
 				// Stream graph status description
 				if (graphStatus && prevNode !== node) {
@@ -202,6 +229,8 @@ export class SuperWorkflow {
 					logger.info('Streaming AI message', { message: metadata[0].content });
 					this.writeToStream(response, threadId, metadata[0].content as string, 'Response');
 				}
+
+				prevNode = node;
 			}
 		} catch (e) {
 			logger.error('Error streaming graph', { error: e });

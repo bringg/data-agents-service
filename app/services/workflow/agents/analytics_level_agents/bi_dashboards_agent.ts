@@ -27,7 +27,8 @@ export const biDashboardsAgent = async (state: AnalyticsWorkflowStateType): Prom
 	const biDashboardsReactAgent = createReactAgent({
 		llm: SuperWorkflow.llm,
 		tools: [...WIDGET_DATA_TOOLS],
-		stateModifier
+		stateModifier,
+		name: 'BiDashboards'
 	});
 
 	return runAgentNode({

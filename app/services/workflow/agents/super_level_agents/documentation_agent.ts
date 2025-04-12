@@ -19,7 +19,8 @@ export const documentationAgent = async (state: SuperWorkflowStateType): Promise
 	const docsReactAgent = createReactAgent({
 		llm: SuperWorkflow.llm,
 		tools: [ragFetchTool],
-		stateModifier
+		stateModifier,
+		name: 'Documentation'
 	});
 
 	return runAgentNode({ state, agent: docsReactAgent, name: 'Documentation', supervisorName: 'Supervisor' });

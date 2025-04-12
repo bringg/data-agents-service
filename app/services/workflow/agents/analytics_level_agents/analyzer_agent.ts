@@ -18,7 +18,8 @@ export const analyzerAgent = async (state: AnalyticsWorkflowStateType): Promise<
 	const analyzerReactAgent = createReactAgent({
 		llm: SuperWorkflow.supervisorLLM,
 		tools: [averageTool, secondsToMinutesTool],
-		stateModifier
+		stateModifier,
+		name: 'Analyzer'
 	});
 
 	return runAgentNode({

@@ -27,7 +27,8 @@ export const reportsAgent = async (state: AnalyticsWorkflowStateType): Promise<{
 	const reportsReactAgent = createReactAgent({
 		llm: SuperWorkflow.llm,
 		tools: [loadTool, last180DaysTool],
-		stateModifier
+		stateModifier,
+		name: 'Reports'
 	});
 
 	return runAgentNode({
