@@ -19,6 +19,7 @@ import { MAIN_SUPERVISOR_PROMPT } from '../../prompts';
 import { createLLM } from '../../utils';
 import { AnalyticsWorkflow } from '../analytics_sub_graph';
 import { AnalyticsWorkflowStateType } from '../analytics_sub_graph/types';
+import { SUPERVISOR_NODES } from '../constants';
 import { GRAPH_STATUS_DESCRIPTION } from './constants';
 import { CompiledSuperWorkflowType, SSEEvent, SuperGraphStateType, SuperWorkflowStateType } from './types';
 import { getCurrentNodeName } from './utils';
@@ -96,19 +97,19 @@ export class SuperWorkflow {
 		this.superGraph = new StateGraph(this.GraphState)
 			.addNode('AnalyticsTeam', getState.pipe(analyticsSubGraph).pipe(joinGraph), {})
 			.addNode('Documentation', documentationAgent)
-			.addNode('Supervisor', supervisorAgent)
+			.addNode(SUPERVISOR_NODES.Supervisor, supervisorAgent)
 			.addNode('HumanNode', humanNode)
 			.addNode('Composer', composerAgent)
-			.addEdge('AnalyticsTeam', 'Supervisor')
-			.addEdge('Documentation', 'Supervisor')
+			.addEdge('AnalyticsTeam', SUPERVISOR_NODES.Supervisor)
+			.addEdge('Documentation', SUPERVISOR_NODES.Supervisor)
 			/* eslint-disable-next-line */
-			.addConditionalEdges('Supervisor', (x: any) => x.next, {
+			.addConditionalEdges(SUPERVISOR_NODES.Supervisor, (x: any) => x.next, {
 				AnalyticsTeam: 'AnalyticsTeam',
 				Documentation: 'Documentation',
 				HumanNode: 'HumanNode',
 				FINISH: 'Composer'
 			})
-			.addEdge(START, 'Supervisor')
+			.addEdge(START, SUPERVISOR_NODES.Supervisor)
 			.addEdge('Composer', END)
 			.compile({ checkpointer: this.checkpointer });
 	}
@@ -167,16 +168,15 @@ export class SuperWorkflow {
 		metadata: any,
 		gathered: any
 	): Promise<any> {
+		const isSupervisorNode = Boolean(SUPERVISOR_NODES[node]);
+
 		// Gather content from both supervisor types
-		if (
-			(node === 'Supervisor' && prevNode === 'Supervisor') ||
-			(node === 'AnalyticsSupervisor' && prevNode === 'AnalyticsSupervisor')
-		) {
+		if (isSupervisorNode && node === prevNode) {
 			gathered = gathered !== undefined ? concat(gathered, metadata[0]) : metadata[0];
 		}
 
 		// Stream supervisor outputs when switching to a different node
-		if (gathered && (prevNode === 'Supervisor' || prevNode === 'AnalyticsSupervisor') && node !== prevNode) {
+		if (gathered && isSupervisorNode && node !== prevNode) {
 			const { statusMessage, next } = gathered.tool_calls[0].args;
 
 			if (next !== 'HumanNode') {
@@ -215,13 +215,13 @@ export class SuperWorkflow {
 
 		// Extract graph events and stream them back
 		try {
-			let prevNode = 'Supervisor';
+			let prevNode = SUPERVISOR_NODES.Supervisor;
 			let gathered = undefined;
 
 			this.writeToStream(response, threadId, threadId, 'ThreadId');
 
 			for await (const [nodes, metadata] of stream) {
-				const node = getCurrentNodeName(nodes);
+				const node = nodes.length > 0 ? getCurrentNodeName(nodes) : SUPERVISOR_NODES.Supervisor;
 				const graphStatus = GRAPH_STATUS_DESCRIPTION[node];
 
 				gathered = await this.handleSupervisorMessage(response, threadId, node, prevNode, metadata, gathered);

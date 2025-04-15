@@ -2,6 +2,7 @@ import { BaseMessage } from '@langchain/core/messages';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 
 import { AnalyticsWorkflowStateType } from '../../graphs/analytics_sub_graph/types';
+import { SUPERVISOR_NODES } from '../../graphs/constants';
 import { SuperWorkflow } from '../../graphs/super_graph';
 import { BI_DASHBOARDS_AGENT_PROMPT } from '../../prompts';
 import { WIDGET_DATA_TOOLS } from '../../tools';
@@ -35,6 +36,6 @@ export const biDashboardsAgent = async (state: AnalyticsWorkflowStateType): Prom
 		state,
 		agent: biDashboardsReactAgent,
 		name: 'BiDashboards',
-		supervisorName: 'Analytics_Supervisor'
+		supervisorName: SUPERVISOR_NODES.AnalyticsSupervisor
 	});
 };

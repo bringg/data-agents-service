@@ -1,6 +1,7 @@
 import { HumanMessage } from '@langchain/core/messages';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 
+import { SUPERVISOR_NODES } from '../../graphs/constants';
 import { SuperWorkflow } from '../../graphs/super_graph';
 import { SuperWorkflowStateType } from '../../graphs/super_graph/types';
 import { DOCUMENTATION_AGENT_PROMPT } from '../../prompts';
@@ -23,5 +24,10 @@ export const documentationAgent = async (state: SuperWorkflowStateType): Promise
 		name: 'Documentation'
 	});
 
-	return runAgentNode({ state, agent: docsReactAgent, name: 'Documentation', supervisorName: 'Supervisor' });
+	return runAgentNode({
+		state,
+		agent: docsReactAgent,
+		name: 'Documentation',
+		supervisorName: SUPERVISOR_NODES.Supervisor
+	});
 };
