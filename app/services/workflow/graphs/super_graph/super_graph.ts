@@ -159,6 +159,36 @@ export class SuperWorkflow {
 		);
 	}
 
+	private async handleSupervisorMessage(
+		response: Response,
+		threadId: string,
+		node: string,
+		prevNode: string,
+		metadata: any,
+		gathered: any
+	): Promise<any> {
+		// Gather content from both supervisor types
+		if (
+			(node === 'Supervisor' && prevNode === 'Supervisor') ||
+			(node === 'AnalyticsSupervisor' && prevNode === 'AnalyticsSupervisor')
+		) {
+			gathered = gathered !== undefined ? concat(gathered, metadata[0]) : metadata[0];
+		}
+
+		// Stream supervisor outputs when switching to a different node
+		if (gathered && (prevNode === 'Supervisor' || prevNode === 'AnalyticsSupervisor') && node !== prevNode) {
+			const { statusMessage, next } = gathered.tool_calls[0].args;
+
+			if (next !== 'HumanNode') {
+				logger.info('Streaming Supervisor message', { message: statusMessage });
+				await this.writeToStream(response, threadId, statusMessage, 'Status-Description');
+			}
+			gathered = undefined;
+		}
+
+		return gathered;
+	}
+
 	@SetSSE
 	@IsRelevant
 	/**
@@ -194,29 +224,7 @@ export class SuperWorkflow {
 				const node = getCurrentNodeName(nodes);
 				const graphStatus = GRAPH_STATUS_DESCRIPTION[node];
 
-				// Gather content from both supervisor types
-				if (
-					(node === 'Supervisor' && prevNode === 'Supervisor') ||
-					(node === 'AnalyticsSupervisor' && prevNode === 'AnalyticsSupervisor')
-				) {
-					gathered = gathered !== undefined ? concat(gathered, metadata[0]) : metadata[0];
-				}
-
-				// Stream supervisor outputs when switching to a different node
-				if (
-					gathered &&
-					(prevNode === 'Supervisor' || prevNode === 'AnalyticsSupervisor') &&
-					node !== prevNode
-				) {
-					logger.info('Streaming Supervisor message', { message: gathered.tool_calls[0].args.statusMessage });
-					this.writeToStream(
-						response,
-						threadId,
-						gathered.tool_calls[0].args.statusMessage,
-						'Status-Description'
-					);
-					gathered = undefined;
-				}
+				gathered = await this.handleSupervisorMessage(response, threadId, node, prevNode, metadata, gathered);
 
 				// Stream graph status description
 				if (graphStatus && prevNode !== node) {
