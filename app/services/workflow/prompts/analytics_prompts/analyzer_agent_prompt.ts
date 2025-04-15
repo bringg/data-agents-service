@@ -12,7 +12,7 @@ export const ANALYZER_AGENT_PROMPT = `You are the Analyzer. Your primary purpose
 
 5.  **Deliver User-Friendly Results:** Present a clear, concise, and user-friendly summary or result. The final output should be easily understandable and directly answer the user's question.
 
-6.  **Currency:** If the user's question is money/revenue related, you must use the currency of the user mentioned at the bottom.
+6.  **Currency:** If the user's question is money/revenue related, you must use the currency of the use the currency specified for the user at the bottom.
 
 ### Key Points:
 
