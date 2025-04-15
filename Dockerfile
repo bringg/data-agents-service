@@ -1,4 +1,4 @@
-FROM bringg/node:20-alpine
+FROM bringg/node:22-alpine
 LABEL maintainer "Bringg DevOps <devops@bringg.com>"
 
 EXPOSE 3001

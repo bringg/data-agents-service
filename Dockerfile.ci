@@ -1,2 +1,2 @@
-FROM bringg/node:20-alpine
+FROM bringg/node:22-alpine
 RUN apk --no-cache add git python3 build-base
