@@ -10,3 +10,43 @@ service:
   endpoints:
   - path: /data-agents-service
     stripPath: true
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 172Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+envVariables:
+- name: OPENAI_API_KEY
+  valueFrom:
+    secretKeyRef:
+      key: openai_api_key
+      name: ai-secrets
+
+- name: LANGSMITH_API_KEY
+  valueFrom:
+    secretKeyRef:
+      key: langsmith_api_key
+      name: ai-secrets
+
+- name: LANGSMITH_TRACING
+  value: true
+
+- name: LANGSMITH_ENDPOINT
+  value: "https://api.smith.langchain.com"
+
+- name: LANGSMITH_PROJECT
+  value: "data-agents-service"
+
+- name: GOOGLE_APPLICATION_CREDENTIALS
+  value: /etc/gcp/credentials.json
+
+mounts:
+  - path: /etc/gcp
+    volume:
+      name: ai-vertex-service-account
+      secret:
+        secretName: ai-vertex-service-account
