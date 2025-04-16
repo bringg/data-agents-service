@@ -2,6 +2,7 @@ import { BaseMessage } from '@langchain/core/messages';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 
 import { AnalyticsWorkflowStateType } from '../../graphs/analytics_sub_graph/types';
+import { SUPERVISOR_NODES } from '../../graphs/constants';
 import { SuperWorkflow } from '../../graphs/super_graph';
 import { ANALYZER_AGENT_PROMPT } from '../../prompts';
 import { averageTool, secondsToMinutesTool } from '../../tools';
@@ -18,7 +19,8 @@ export const analyzerAgent = async (state: AnalyticsWorkflowStateType): Promise<
 	const analyzerReactAgent = createReactAgent({
 		llm: SuperWorkflow.supervisorLLM,
 		tools: [averageTool, secondsToMinutesTool],
-		stateModifier
+		stateModifier,
+		name: 'Analyzer'
 	});
 
 	return runAgentNode({
@@ -27,6 +29,6 @@ export const analyzerAgent = async (state: AnalyticsWorkflowStateType): Promise<
 		name: 'Analyzer',
 		hasToolHistory: true,
 		hasHistory: true,
-		supervisorName: 'Analytics_Supervisor'
+		supervisorName: SUPERVISOR_NODES.AnalyticsSupervisor
 	});
 };

@@ -25,7 +25,12 @@ export const createTeamSupervisor = async (llm: ChatAI, systemPrompt: string, me
 			next: z.enum(['FINISH', ...members]),
 			instructions: z
 				.string()
-				.describe('The specific instructions of the sub-task the next role should accomplish.')
+				.describe('The specific instructions of the sub-task the next role should accomplish.'),
+			statusMessage: z
+				.string()
+				.describe(
+					'A user-friendly message explaining what the system is currently doing or planning to do next.'
+				)
 		})
 	};
 
@@ -53,7 +58,8 @@ export const createTeamSupervisor = async (llm: ChatAI, systemPrompt: string, me
 		.pipe(async (x: ParsedToolCall[]) => {
 			return {
 				next: x[0].args.next,
-				instructions: x[0].args.instructions
+				instructions: x[0].args.instructions,
+				statusMessage: x[0].args.statusMessage
 			};
 		});
 

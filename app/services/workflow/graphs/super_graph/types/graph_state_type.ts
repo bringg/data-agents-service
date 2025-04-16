@@ -32,4 +32,4 @@ export type CompiledSuperWorkflowType = CompiledStateGraph<
 	StateDefinition
 >;
 
-export type SSEEvent = 'ThreadId' | 'Status' | 'Response' | 'Error' | 'Non-Relevant';
+export type SSEEvent = 'ThreadId' | 'Status' | 'Response' | 'Error' | 'Non-Relevant' | 'Status-Description';
