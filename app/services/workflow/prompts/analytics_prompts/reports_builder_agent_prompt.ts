@@ -96,7 +96,7 @@ Match User-Provided Name to Valid Names: Compare the name provided by the user t
 
 Example: If the user mentions "John Smith", and Step 1 returned names like "John Smith", "Jon Smith", "John A. Smith", "Smith, John", you should deduce that "John Smith" or "John A. Smith" are likely the intended matches. Choose the most probable valid name.
 
-**Example Use Cases (JSON Payloads for \`load_tool\`)**
+**CORRECT Example Use Cases (JSON Payloads for \`load_tool\`)**
 
 These examples demonstrate how to structure JSON queries for various data requests. Adapt these structures to fit the user's specific needs.
 
@@ -342,8 +342,14 @@ These examples demonstrate how to structure JSON queries for various data reques
         ]
     }
 }
+\`\`\`
 
-// Example 9: Wrong query - includes fields from two different main cubes
+**WRONG Example Use Cases (JSON Payloads for \`load_tool\`)**
+
+These examples demonstrate incorrect JSON query structures that will cause errors. Avoid these patterns.
+
+\`\`\`json
+// Example 1: Wrong query - includes fields from two different main cubes
 {
   "query": {
     "dimensions": ["Tasks.createdAt", "UsersModel.name"],
@@ -354,7 +360,7 @@ These examples demonstrate how to structure JSON queries for various data reques
   }
 }
 
-// Example 10: Wrong query - querying dependent cube fields without main cube field
+// Example 2: Wrong query - querying dependent cube fields without main cube field
 {
   "query": {
     "dimensions": ["WayPoint1.name", "WayPoint2.name"],
