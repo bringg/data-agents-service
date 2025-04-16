@@ -1,10 +1,12 @@
 import { GetItemIdInput } from '../schemas/get_item_id_schema';
 
+const HALF_YEAR_BACK_DATE_RANGE = 179;
+
 const getDateRange = () => {
 	const endDate = new Date();
 	const startDate = new Date();
 
-	startDate.setDate(endDate.getDate() - 179);
+	startDate.setDate(endDate.getDate() - HALF_YEAR_BACK_DATE_RANGE);
 
 	return [startDate.toISOString().split('T')[0] + ' 00:00:00', endDate.toISOString().split('T')[0] + ' 23:59:59'];
 };
