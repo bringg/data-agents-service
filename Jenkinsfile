@@ -113,6 +113,7 @@ pipeline {
                 AIRBRAKE_PROJECT_ID  = 612794
                 AIRBRAKE_PROJECT_KEY = '58bd22ec88282bf529e10e6226281dbc'
                 DOCKER_REPO = "${dockerUtils.getImageRepo(dockerImage.id)}"
+                USE_ARGO = true
             }
 
             steps {
