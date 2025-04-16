@@ -182,7 +182,7 @@ export class SuperWorkflow {
 
 			if (next !== 'HumanNode') {
 				logger.info('Streaming Supervisor message', { message: statusMessage });
-				await this.writeToStream(response, threadId, statusMessage, 'Status-Description');
+				this.writeToStream(response, threadId, statusMessage, 'Status-Description');
 			}
 			gathered = undefined;
 		}
@@ -247,10 +247,15 @@ export class SuperWorkflow {
 			logger.error('Error streaming graph', { error: e });
 			response.status(StatusCodes.INTERNAL_SERVER_ERROR);
 			this.writeToStream(response, threadId, ERRORS.STREAM_ERROR, 'Error');
+			this.addConversationMessages(threadId, userId, merchantId, [
+				new HumanMessage({ content: ERRORS.STREAM_ERROR, name: 'Composer' })
+			]);
 		}
+
+		this.writeToStream(response, threadId, 'Stream ended', 'Stream-Ended');
 	}
 
-	public async writeToStream(response: Response, threadId: string, message: string, event: SSEEvent): Promise<void> {
+	public writeToStream(response: Response, threadId: string, message: string, event: SSEEvent): void {
 		response.write(`id: ${threadId}\n`);
 		response.write(`event: ${event}\n`);
 		response.write(`data: ${message}\n\n`);

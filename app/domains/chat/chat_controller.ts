@@ -83,7 +83,7 @@ export class ChatController {
 	private async getMerchantPriceCurrency(merchantId: number): Promise<string> {
 		// For dev purposes
 		if (IS_DEV || IS_TEST) {
-			return process.env.REGION?.startsWith('eu') ? 'GBP' : 'USD';
+			return process.env.REGION?.startsWith('eu') ? 'EUR' : 'USD';
 		}
 
 		const merchantConfiguration = await MerchantConfiguration.find(merchantId);
