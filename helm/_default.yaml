@@ -33,7 +33,7 @@ envVariables:
       name: ai-secrets
 
 - name: LANGSMITH_TRACING
-  value: true
+  value: "true"
 
 - name: LANGSMITH_ENDPOINT
   value: "https://api.smith.langchain.com"
