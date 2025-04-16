@@ -13,6 +13,7 @@ type SuperAnnotationRoot = {
 	conversation_messages: BinaryOperatorAggregate<BaseMessage[], BaseMessage[]>;
 	next: BinaryOperatorAggregate<object, unknown>;
 	instructions: BinaryOperatorAggregate<string, string>;
+	currency: typeof Annotation<string>;
 };
 
 export type SuperGraphStateType = AnnotationRoot<SuperAnnotationRoot>;
@@ -32,4 +33,11 @@ export type CompiledSuperWorkflowType = CompiledStateGraph<
 	StateDefinition
 >;
 
-export type SSEEvent = 'ThreadId' | 'Status' | 'Response' | 'Error' | 'Non-Relevant' | 'Status-Description';
+export type SSEEvent =
+	| 'ThreadId'
+	| 'Status'
+	| 'Response'
+	| 'Error'
+	| 'Non-Relevant'
+	| 'Status-Description'
+	| 'Stream-Ended';

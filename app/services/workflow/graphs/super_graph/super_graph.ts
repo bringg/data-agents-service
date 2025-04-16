@@ -43,6 +43,7 @@ export class SuperWorkflow {
 			merchant_id: Annotation<number>,
 			user_id: Annotation<number>,
 			time_zone: Annotation<string>,
+			currency: Annotation<string>,
 			messages: Annotation<BaseMessage[]>({
 				reducer: (x, y) =>
 					x.length > 0 && y.length > 0 && y[y.length - 1].content === x[x.length - 1].content
@@ -181,7 +182,7 @@ export class SuperWorkflow {
 
 			if (next !== 'HumanNode') {
 				logger.info('Streaming Supervisor message', { message: statusMessage });
-				await this.writeToStream(response, threadId, statusMessage, 'Status-Description');
+				this.writeToStream(response, threadId, statusMessage, 'Status-Description');
 			}
 			gathered = undefined;
 		}
@@ -200,7 +201,8 @@ export class SuperWorkflow {
 		merchantId: number,
 		userId: number,
 		threadId: string = uuidv4(),
-		time_zone: string | null
+		time_zone: string | null,
+		currency: string | null
 	): Promise<void> {
 		const stream = await SuperWorkflow.superGraph.stream(
 			{
@@ -208,7 +210,8 @@ export class SuperWorkflow {
 				messages: [new HumanMessage({ content: userInput, name: 'User' })],
 				merchant_id: merchantId,
 				user_id: userId,
-				...(time_zone ? { time_zone } : {})
+				...(time_zone ? { time_zone } : {}),
+				...(currency ? { currency } : {})
 			},
 			{ ...this.options, configurable: { thread_id: threadId, userId, merchantId } }
 		);
@@ -244,10 +247,15 @@ export class SuperWorkflow {
 			logger.error('Error streaming graph', { error: e });
 			response.status(StatusCodes.INTERNAL_SERVER_ERROR);
 			this.writeToStream(response, threadId, ERRORS.STREAM_ERROR, 'Error');
+			this.addConversationMessages(threadId, userId, merchantId, [
+				new HumanMessage({ content: ERRORS.STREAM_ERROR, name: 'Composer' })
+			]);
 		}
+
+		this.writeToStream(response, threadId, 'Stream ended', 'Stream-Ended');
 	}
 
-	public async writeToStream(response: Response, threadId: string, message: string, event: SSEEvent): Promise<void> {
+	public writeToStream(response: Response, threadId: string, message: string, event: SSEEvent): void {
 		response.write(`id: ${threadId}\n`);
 		response.write(`event: ${event}\n`);
 		response.write(`data: ${message}\n\n`);

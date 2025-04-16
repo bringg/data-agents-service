@@ -19,6 +19,7 @@ export class AnalyticsWorkflow {
 			merchant_id: Annotation<number>,
 			user_id: Annotation<number>,
 			time_zone: Annotation<string>,
+			currency: Annotation<string>,
 			messages: Annotation<BaseMessage[]>({
 				reducer: (x, y) => x.concat(y),
 				default: () => []
@@ -69,14 +70,22 @@ export class AnalyticsWorkflow {
 			.addEdge(START, 'AnalyticsSupervisor');
 
 		const enterAnalyticsChain = RunnableLambda.from(
-			({ messages, instructions, merchant_id, user_id, time_zone }: Partial<AnalyticsWorkflowStateType>) => {
+			({
+				messages,
+				instructions,
+				merchant_id,
+				user_id,
+				time_zone,
+				currency
+			}: Partial<AnalyticsWorkflowStateType>) => {
 				return {
 					messages: messages,
 					instructions: instructions,
 					merchant_id: merchant_id,
 					user_id: user_id,
 					time_zone: time_zone,
-					team_members: ANALYTICS_MEMBERS
+					team_members: ANALYTICS_MEMBERS,
+					currency: currency
 				};
 			}
 		);

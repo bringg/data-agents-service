@@ -5,20 +5,20 @@ import { AnalyticsWorkflowStateType } from '../../graphs/analytics_sub_graph/typ
 import { SUPERVISOR_NODES } from '../../graphs/constants';
 import { SuperWorkflow } from '../../graphs/super_graph';
 import { ANALYZER_AGENT_PROMPT } from '../../prompts';
-import { averageTool, secondsToMinutesTool } from '../../tools';
+import { secondsToMinutesTool } from '../../tools';
 import { agentStateModifier, runAgentNode } from '../utils';
 import { ANALYTICS_MEMBERS } from './constants';
 
 export const analyzerAgent = async (state: AnalyticsWorkflowStateType): Promise<{ messages: BaseMessage[] }> => {
 	const stateModifier = agentStateModifier({
 		systemPrompt: ANALYZER_AGENT_PROMPT,
-		tools: [averageTool, secondsToMinutesTool],
+		tools: [secondsToMinutesTool],
 		teamMembers: ANALYTICS_MEMBERS
 	});
 
 	const analyzerReactAgent = createReactAgent({
 		llm: SuperWorkflow.supervisorLLM,
-		tools: [averageTool, secondsToMinutesTool],
+		tools: [secondsToMinutesTool],
 		stateModifier,
 		name: 'Analyzer'
 	});

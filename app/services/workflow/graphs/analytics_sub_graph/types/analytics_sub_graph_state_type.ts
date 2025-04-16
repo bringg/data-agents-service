@@ -10,6 +10,7 @@ type AnalyticsAnnotationRoot = {
 	next: BinaryOperatorAggregate<object, unknown>;
 	instructions: BinaryOperatorAggregate<string, string>;
 	tool_messages: BinaryOperatorAggregate<BaseMessage[], BaseMessage[]>;
+	currency: typeof Annotation<string>;
 };
 
 export type AnalyticsGraphStateType = AnnotationRoot<AnalyticsAnnotationRoot>;
