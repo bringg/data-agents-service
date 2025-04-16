@@ -40,3 +40,13 @@ envVariables:
 
 - name: LANGSMITH_PROJECT
   value: "data-agents-service"
+
+- name: GOOGLE_APPLICATION_CREDENTIALS
+  value: /etc/gcp/credentials.json
+
+mounts:
+  - path: /etc/gcp
+    volume:
+      name: ai-vertex-service-account
+      secret:
+        secretName: ai-vertex-service-account
