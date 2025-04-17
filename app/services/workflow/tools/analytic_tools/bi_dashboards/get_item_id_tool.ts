@@ -1,5 +1,10 @@
+import { logger } from '@bringg/service';
+import { UserContext } from '@bringg/types';
+import { RunnableConfig } from '@langchain/core/runnables';
 import { tool } from '@langchain/core/tools';
 
+import { IS_DEV } from '../../../../../common/constants';
+import { executeLoadQueryRpc } from '../reports/utils';
 import { executeLoadQueryHttp } from '../reports/utils/http_utils';
 import { PREDEFINED_QUERIES } from './constants/get_item_id_queries.constants';
 import { GetItemIdInput, getItemIdInputSchema } from './schemas/get_item_id_schema';
@@ -13,8 +18,11 @@ const toolSchema = {
 	verboseParsingErrors: true
 };
 
-const typeHandlers: Record<GetItemIdInput['type'], (input: GetItemIdInput) => Promise<unknown>> = {
-	drivers: async input => {
+const typeHandlers: Record<
+	GetItemIdInput['type'],
+	(input: GetItemIdInput, userContext: UserContext) => Promise<unknown>
+> = {
+	drivers: async (input, userContext) => {
 		const { query } = PREDEFINED_QUERIES.drivers;
 
 		if (input.name) {
@@ -28,9 +36,9 @@ const typeHandlers: Record<GetItemIdInput['type'], (input: GetItemIdInput) => Pr
 			];
 		}
 
-		return executeLoadQueryHttp(query);
+		return IS_DEV ? executeLoadQueryHttp(query) : executeLoadQueryRpc(query, userContext);
 	},
-	teams: async input => {
+	teams: async (input, userContext) => {
 		const { query } = PREDEFINED_QUERIES.teams;
 
 		if (input.name) {
@@ -44,24 +52,24 @@ const typeHandlers: Record<GetItemIdInput['type'], (input: GetItemIdInput) => Pr
 			];
 		}
 
-		return executeLoadQueryHttp(query);
+		return IS_DEV ? executeLoadQueryHttp(query) : executeLoadQueryRpc(query, userContext);
 	},
-	fleets: async input => {
-		const items = await getServiceDataItems('fleets', process.env.MERCHANT_ID as unknown as number);
+	fleets: async (input, userContext) => {
+		const items = await getServiceDataItems('fleets', userContext.merchantId);
 
 		return input.name
 			? items.filter(item => item.name.toLowerCase().includes(input.name?.toLowerCase() || ''))
 			: items;
 	},
-	servicePlans: async input => {
-		const items = await getServiceDataItems('servicePlans', process.env.MERCHANT_ID as unknown as number);
+	servicePlans: async (input, userContext) => {
+		const items = await getServiceDataItems('servicePlans', userContext.merchantId);
 
 		return input.name
 			? items.filter(item => item.name.toLowerCase().includes(input.name?.toLowerCase() || ''))
 			: items;
 	},
-	tags: async input => {
-		const items = await getServiceDataItems('tags', process.env.MERCHANT_ID as unknown as number);
+	tags: async (input, userContext) => {
+		const items = await getServiceDataItems('tags', userContext.merchantId);
 
 		return input.name
 			? items.filter(item => item.name.toLowerCase().includes(input.name?.toLowerCase() || ''))
@@ -69,8 +77,19 @@ const typeHandlers: Record<GetItemIdInput['type'], (input: GetItemIdInput) => Pr
 	}
 };
 
-export const getItemIdTool = tool(async (input: GetItemIdInput) => {
+export const getItemIdTool = tool(async (input: GetItemIdInput, { configurable }: RunnableConfig) => {
 	const handler = typeHandlers[input.type];
 
-	return await handler(input);
+	const { userId, merchantId } = configurable as {
+		userId: number;
+		merchantId: number;
+	};
+
+	try {
+		return await handler(input, { userId, merchantId });
+	} catch (error) {
+		logger.error(`Error getting item id, Error: ${JSON.stringify(error)}`);
+
+		throw new Error(error);
+	}
 }, toolSchema);

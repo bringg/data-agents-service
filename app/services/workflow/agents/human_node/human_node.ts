@@ -4,15 +4,11 @@ import { RunnableConfig } from '@langchain/core/runnables';
 import { interrupt } from '@langchain/langgraph';
 
 import { SuperWorkflow, SuperWorkflowStateType, workflow } from '../../graphs/super_graph';
+import { humanNodeAgentPrompt } from '../../prompts';
 
 export const humanNode = async (state: SuperWorkflowStateType, config?: RunnableConfig): Promise<void> => {
 	const prompt = ChatPromptTemplate.fromMessages([
-		[
-			'system',
-			`A customer is going to read your output.
-			Transpile the given Supervisor's request onto a first-person conversation with the customer. Reply only with what
-			 the customer needs to read`
-		],
+		['system', humanNodeAgentPrompt],
 		new MessagesPlaceholder('messages')
 	]);
 
