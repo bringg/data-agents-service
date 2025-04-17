@@ -342,6 +342,27 @@ These examples demonstrate how to structure JSON queries for various data reques
         ]
     }
 }
+
+// Example 9: Get customer complaints (if Rating is enabled)
+{
+    "query": {
+    "timezone": "America/New_York",
+    "dimensions": [
+      "TaskRating.ratingComments",
+      "TaskRating.ratingReasonsList",
+      "TaskRating.taskRating"
+    ],
+    "timeDimensions": [
+      {
+        "dimension": "Tasks.createdAt",
+        "dateRange": [
+          "2025-04-17 00:00:00",
+          "2025-04-17 23:59:59"
+        ]
+      }
+    ]
+  }
+}
 \`\`\`
 
 **WRONG Example Use Cases (JSON Payloads for \`load_tool\`)**
