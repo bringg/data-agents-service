@@ -105,19 +105,7 @@ export const ANALYTICS_MEMBERS_DESCRIPTION = {
     - Fine-grained filtering that extends beyond standard filters (e.g., filtering by obscure fields or multi-step queries).
 
    **Examples:**
-     - "What was the total revenue last month?"
-     - "How many deliveries were completed yesterday?"
-     - "What's the average delivery time per city?"
-     - "Compare the predicted routes with the actual routes, highlighting gaps in start time, duration, distance and time at the customer site."
-     - "View all orders created in the last seven days, their status, and a summary of key fulfillment details."
-     - "View a list of your own drivers who worked on a specific day, including their start and end times, and total shift hours."
-     - "View all alerts in a given time frame to identify and troubleshoot delivery issues."
-     - "View all executed automation workflows by date and outcome to troubleshoot issues."
-     - "View the utilization of future slot capacity by skill and location, and adjust resources based on availability."
-     - 'View a breakdown of all orders canceled within the last 7 days, including who canceled them and why."
-     - "View all orders completed over the last seven days, including their status and which drivers completed them."
      - "Time Last Time Driver Logged In"
-     - "Compare the promised with the actual time the driver arrived at the customer destination."
      - "Get Driver/Team/.../ ID by name."
      - "List all available types of Service Types."
      - "Analyze the frequencies and types of consumer cancellation reasons, potentially joining with Orders (\`Tasks\`) to see which order types are most affected."
