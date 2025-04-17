@@ -13,10 +13,22 @@ export const composerAgent = async (
 	]);
 
 	const formattedPrompt = await prompt.formatMessages({
-		messages: state.messages
+		messages: state.messages,
+		currency: state.currency,
+		time_zone: state.time_zone
 	});
 
-	const { content } = await SuperWorkflow.supervisorLLM.invoke(formattedPrompt);
+	const { content } = await SuperWorkflow.userFacingLLM.invoke(formattedPrompt);
 
-	return { conversation_messages: [new HumanMessage({ content, name: 'Composer' })] };
+	return {
+		conversation_messages: [
+			new HumanMessage({
+				content,
+				name: 'Composer',
+				additional_kwargs: {
+					timestamp: new Date().toISOString() // ISO 8601 format with timezone
+				}
+			})
+		]
+	};
 };

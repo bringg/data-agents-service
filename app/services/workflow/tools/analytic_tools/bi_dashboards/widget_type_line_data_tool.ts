@@ -1,37 +1,32 @@
-//! NO HTTP ENDPOINT
 import { WidgetType } from '@bringg/types';
+import { RunnableConfig } from '@langchain/core/runnables';
 import { tool } from '@langchain/core/tools';
-import { z } from 'zod';
 
-export const widgetTypeLineDataTool = tool(
-	async input => {
-		const url = `https://us2-admin-api.bringg.com/analytics-service/v1/parent-app/own-fleet/dashboards/widget-type/${WidgetType.LineChart}/widgets-catalog-id/${input.widgetCatalogId}/get-data`;
-		const jwt = process.env.analyticsJWT;
+import { IS_DEV } from '../../../../../common/constants';
+import { widgetTypeLineDataInputSchema } from './schemas/widgets_schemas';
+import { executeWidgetTypeDataHttp } from './utils/http_utils';
+import { executeWidgetTypeLineDataRpc } from './utils/rpc_utils';
 
-		const response = await fetch(url, {
-			method: 'POST',
-			headers: {
-				Authorization: `Bearer ${jwt}`,
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(input)
-		});
+const toolSchema = {
+	name: 'widget_type_line_data_tool',
+	description:
+		'Fetches analytics data for a specific widget catalog item (presented as a line chart) using filters, grouping, and time granularity as needed.',
+	schema: widgetTypeLineDataInputSchema,
+	verboseParsingErrors: true
+};
 
-		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`);
-		}
+export const _widgetTypeLineDataToolHttp = tool(async input => {
+	return executeWidgetTypeDataHttp(input, WidgetType.LineChart);
+}, toolSchema);
 
-		const data = await response.json();
+export const _widgetTypeLineDataToolRpc = tool(async (input, { configurable }: RunnableConfig) => {
+	const { userId, merchantId } = configurable as { userId: number; merchantId: number };
+	const parsedInput = widgetTypeLineDataInputSchema.parse(input);
 
-		return data;
-	},
-	{
-		name: 'widget_type_line_data_tool',
-		description:
-			'Fetches analytics data for a specific widget catalog item (presented as a line chart) using filters, grouping, and time granularity as needed.',
-		schema: z.object({
-			widgetCatalogId: z.number()
-		}),
-		verboseParsingErrors: true
-	}
-);
+	return executeWidgetTypeLineDataRpc({
+		...parsedInput,
+		userContext: { userId, merchantId }
+	});
+}, toolSchema);
+
+export const widgetTypeLineDataTool = !IS_DEV ? _widgetTypeLineDataToolRpc : _widgetTypeLineDataToolHttp;

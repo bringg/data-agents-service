@@ -1,47 +1,33 @@
 //! NO HTTP ENDPOINT
 import { WidgetType } from '@bringg/types';
+import { RunnableConfig } from '@langchain/core/runnables';
 import { tool } from '@langchain/core/tools';
-import { z } from 'zod';
 
-import { filterSchema } from './schemas';
+import { IS_DEV } from '../../../../../common/constants';
+import { widgetTypeDonutDataInputSchema } from './schemas/widgets_schemas';
+import { executeWidgetTypeDataHttp } from './utils/http_utils';
+import { executeWidgetTypeDonutDataRpc } from './utils/rpc_utils';
 
-export const widgetTypeDonutDataTool = tool(
-	async input => {
-		const { widgetCatalogId, ...body } = input;
+const toolSchema = {
+	name: 'widget_type_donut_data_tool',
+	description:
+		'Fetches analytics data for a specific widget catalog item (presented as a donut chart) using filters, grouping, and time granularity as needed.',
+	schema: widgetTypeDonutDataInputSchema,
+	verboseParsingErrors: true
+};
 
-		const url = `https://us2-admin-api.bringg.com/analytics-service/v1/parent-app/own-fleet/dashboards/widget-type/${WidgetType.DonutChart}/widgets-catalog-id/${widgetCatalogId}/get-data`;
-		const jwt = process.env.analyticsJWT;
+export const _widgetTypeDonutDataToolHttp = tool(async input => {
+	return executeWidgetTypeDataHttp(input, WidgetType.DonutChart);
+}, toolSchema);
 
-		const response = await fetch(url, {
-			method: 'POST',
-			headers: {
-				Authorization: `Bearer ${jwt}`,
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(body)
-		});
+export const _widgetTypeDonutDataToolRpc = tool(async (input, { configurable }: RunnableConfig) => {
+	const { userId, merchantId } = configurable as { userId: number; merchantId: number };
+	const parsedInput = widgetTypeDonutDataInputSchema.parse(input);
 
-		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`);
-		}
+	return executeWidgetTypeDonutDataRpc({
+		...parsedInput,
+		userContext: { userId, merchantId }
+	});
+}, toolSchema);
 
-		const data = await response.json();
-
-		return data;
-	},
-	{
-		name: 'widget_type_donut_data_tool',
-		description:
-			'Fetches analytics data for a specific widget catalog item (presented as a donut chart) using filters, grouping, and time granularity as needed.',
-		schema: z.object({
-			widgetCatalogId: z.number(),
-			filter: filterSchema,
-			timezone: z.string(),
-			useTimeDimension: z.boolean(),
-			groupBy: z.number().int().min(0).max(10).optional(),
-			stackedBy: z.number().int().min(0).max(10).optional(),
-			granularity: z.number().int().min(0).max(3).optional()
-		}),
-		verboseParsingErrors: true
-	}
-);
+export const widgetTypeDonutDataTool = !IS_DEV ? _widgetTypeDonutDataToolRpc : _widgetTypeDonutDataToolHttp;

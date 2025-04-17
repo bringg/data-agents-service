@@ -1,4 +1,4 @@
-import { config, logger } from '@bringg/service';
+import { logger } from '@bringg/service';
 import * as serviceInfo from '@bringg/service/lib/serviceinfo';
 
 import { httpService } from './http_service';
