@@ -31,6 +31,7 @@ const _UnaryFilterSchema = z.object({
 	operator: UnaryOperatorSchema
 	// This schema disallows a `values` property.
 });
+
 // Use z.lazy to allow for recursive definitions for logical filters
 //@ts-ignore
 const _FilterSchema: z.ZodType<Filter> =
@@ -68,10 +69,10 @@ export const QueryZodSchema: ZodType<Query> = z.object({
 		)
 		.optional(),
 	segments: z.array(z.string()).min(0).optional(),
-	limit: z.number().optional(),
-	offset: z.number().optional(),
-	order: z.array(z.array(z.string()).length(2)).optional(),
-	timezone: z.string().optional(),
+	limit: z.number().optional().describe('Limit the number of rows returned by the query'),
+	offset: z.number().optional().describe('Offset the number of rows returned by the query'),
+	order: z.array(z.array(z.string()).length(2)).optional().describe('Order the rows returned by the query'),
+	timezone: z.string().describe('Timezone to use for the query'),
 	renewQuery: z.boolean().optional(),
 	ungrouped: z.boolean().optional()
 });

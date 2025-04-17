@@ -26,7 +26,13 @@ To get started with the `data-agents-service`, follow these steps:
 3. Run locally analytics-service and dongosolo:
     [Setup Analytics-Service locally](https://bringg.atlassian.net/wiki/spaces/PH/pages/4124966936/Setup+Analytics-Service+locally)
 
-4. Start the service:
+4. Add to env locally (.zshrc/.zsh)
+    - GCLOUD_AUTH token via terminal command "gcloud auth print-access-token"
+    - EU_analyticsJWT/US_analyticsJWT (by "REGION" env defined in nodemon.json) token via Bringg Web
+
+5. Optional - document out the @security decorator at chat.controller 
+
+6. Start the service:
     ```sh
     npm run start-dev
     ```
@@ -36,25 +42,20 @@ To get started with the `data-agents-service`, follow these steps:
 Once the service is running, you can interact with it by sending business questions to the endpoints provided below. The service will process the questions using the LangGraph workflow and respond with answers based on the data from the analytics-service.
 
 ## Endpoints via Postman
-### Endpoints via Postman
 
-1. **POST** - `http://localhost:3010/chat`
-    - **Body**:
-    ```json
-    {
-        "initialMessage": "what is the driver with the biggest amount of completed orders according to the reports?"
-    }
-    ```
+1. **New/Continue Chat** - `GET http://localhost:3010/chat/:message?threadId=thread_id`
+   - Creates a new chat thread or continues an existing one
+   - Path Parameters:
+     - `message`: The message to send
+   - Query Parameters:
+     - `threadId`: (Optional) The ID of the chat thread to continue. If not provided, creates a new thread
 
-2. **POST** - `http://localhost:3010/chat/{thread_id}`
-    - **Body**:
-    ```json
-    {
-        "message": "I also need you to check how many drivers do I have."
-    }
-    ```
+2. **Get Chat History** - `GET http://localhost:3010/chat/history/:thread_id`
+   - Retrieves the chat history for a specific thread
+   - Path Parameters:
+     - `thread_id`: The ID of the chat thread to retrieve
 
-3. **GET** - `http://localhost:3010/chat/{thread_id}`
+Note: The service currently has security disabled for development purposes. In production, it uses JWT authentication.
 
 ## Contributing
 

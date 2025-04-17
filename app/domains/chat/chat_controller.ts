@@ -1,74 +1,97 @@
-import { ReqValidator, throwProblem } from '@bringg/service';
-import { BaseMessage } from '@langchain/core/messages';
+import { throwProblem } from '@bringg/service';
+import { Merchant as MerchantModel, MerchantConfiguration } from '@bringg/service-data';
+import { MessageContent } from '@langchain/core/messages';
+import { Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { Context, GET, Path, PathParam, POST, PreProcessor, Security, ServiceContext } from 'typescript-rest';
+import { Context, GET, Path, PathParam, QueryParam, ServiceContext } from 'typescript-rest';
 
-import { IS_DEV } from '../../common/constants';
+import { IS_DEV, IS_TEST } from '../../common/constants';
+import { conditionalSecurity } from '../../common/utils/decorator_utils';
+import { validateUser } from '../../common/utils/user_validation';
 import { workflow } from '../../services/workflow/graphs/super_graph';
-import { ContinueChatDto, NewChatDto } from './types';
-import { continueChatRules, newChatRules } from './validation/chat_validation';
 
 @Path('chat')
-@Security('*', 'bringg-jwt')
+@conditionalSecurity()
 export class ChatController {
 	@Context
 	private context: ServiceContext;
 
-	@POST
-	@Path('/')
-	@PreProcessor(ReqValidator.validate(newChatRules))
+	@GET
+	@Path('/:message')
 	/**
-	 * POST /chat
+	 * GET /chat/:message?threadId=threadId
 	 * Creates a new chat thread.
 	 */
-	public async newChat({ initialMessage }: NewChatDto): Promise<void> {
-		const { merchantId, userId } = this.validateUser();
+	public async newChatMessage(
+		@PathParam('message') message: string,
+		@QueryParam('threadId') threadId: string
+	): Promise<void> {
+		const { merchantId, userId } = validateUser(this.context);
 
-		await workflow.streamGraph(this.context.response, initialMessage, merchantId as number, userId as number);
+		const [time_zone, currency] = threadId
+			? [null, null]
+			: await Promise.all([this.getMerchantTimezone(merchantId), this.getMerchantPriceCurrency(merchantId)]);
+
+		const response = this.context.response as unknown as Response;
+
+		await workflow.streamGraph(
+			response,
+			message,
+			merchantId as number,
+			userId as number,
+			threadId,
+			time_zone,
+			currency
+		);
 	}
 
-	@Path(`/:threadId`)
-	@POST
-	@PreProcessor(ReqValidator.validate(continueChatRules))
-	/**
-	 * POST /chat/:id
-	 * Continues a given chat thread by threadId.
-	 */
-	public async continueChat(@PathParam('threadId') threadId: string, { message }: ContinueChatDto): Promise<void> {
-		const { merchantId, userId } = this.validateUser();
-
-		await workflow.streamGraph(this.context.response, message, merchantId as number, userId as number, threadId);
-	}
-
-	@Path(`/:threadId`)
+	@Path(`/history/:threadId`)
 	@GET
 	/**
-	 * GET /chat/:id
+	 * GET /chat/history/:threadId
 	 * Returns a given chat thread by threadId.
 	 */
-	public async getChatByThreadId(@PathParam('threadId') threadId: string): Promise<BaseMessage[]> {
-		const { merchantId, userId } = this.validateUser();
+	public async getChatByThreadId(
+		@PathParam('threadId') threadId: string
+	): Promise<{ content: MessageContent; name?: string }[]> {
+		const { merchantId, userId } = validateUser(this.context);
 
-		return await workflow.getConversationMessages(threadId, userId, merchantId);
+		const messages = await workflow.getConversationMessages(threadId, userId, merchantId);
+
+		return messages.map(message => ({
+			content: message.content,
+			name: message.name,
+			timestamp: message.additional_kwargs?.timestamp
+		}));
 	}
 
-	/**
-	 * Validates the user and returns the userId and merchantId as numbers.
-	 * @returns { userId: number, merchantId: number }
-	 */
-	private validateUser(): { userId: number; merchantId: number } {
+	private async getMerchantTimezone(merchantId: number): Promise<string> {
 		// For dev purposes
-		if (IS_DEV) {
-			return { userId: 10267117, merchantId: 2288 };
+		if (IS_DEV || IS_TEST) {
+			return process.env.REGION?.startsWith('eu') ? 'Europe/London' : 'America/New_York';
 		}
 
-		const { userId, merchantId } = this.context.request.user || {};
+		const merchant = await MerchantModel.find(merchantId);
 
-		// eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-		if (!userId || !merchantId) {
-			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
+		if (!merchant) {
+			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing merchant');
 		}
 
-		return { userId, merchantId };
+		return merchant.time_zone;
+	}
+
+	private async getMerchantPriceCurrency(merchantId: number): Promise<string> {
+		// For dev purposes
+		if (IS_DEV || IS_TEST) {
+			return process.env.REGION?.startsWith('eu') ? 'EUR' : 'USD';
+		}
+
+		const merchantConfiguration = await MerchantConfiguration.find(merchantId);
+
+		if (!merchantConfiguration) {
+			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing merchant configuration');
+		}
+
+		return merchantConfiguration.price_currency;
 	}
 }

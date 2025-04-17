@@ -1,44 +1,32 @@
-//! NO HTTP ENDPOINT
 import { WidgetType } from '@bringg/types';
+import { RunnableConfig } from '@langchain/core/runnables';
 import { tool } from '@langchain/core/tools';
-import { z } from 'zod';
 
-import { filterSchema } from './schemas';
+import { IS_DEV } from '../../../../../common/constants';
+import { widgetTypePieDataInputSchema } from './schemas/widgets_schemas';
+import { executeWidgetTypeDataHttp } from './utils/http_utils';
+import { executeWidgetTypePieDataRpc } from './utils/rpc_utils';
 
-export const widgetTypePieDataTool = tool(
-	async input => {
-		const url = `https://us2-admin-api.bringg.com/analytics-service/v1/parent-app/own-fleet/dashboards/widget-type/${WidgetType.PieChart}/widgets-catalog-id/${input.widgetCatalogId}/get-data`;
-		const jwt = process.env.analyticsJWT;
+const toolSchema = {
+	name: 'widget_type_pie_data_tool',
+	description:
+		'Fetches analytics data for a specific widget catalog item (presented as a pie chart) using filters, grouping, and time granularity as needed.',
+	schema: widgetTypePieDataInputSchema,
+	verboseParsingErrors: true
+};
 
-		const response = await fetch(url, {
-			method: 'POST',
-			headers: {
-				Authorization: `Bearer ${jwt}`,
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(input)
-		});
+export const _widgetTypePieDataToolHttp = tool(async input => {
+	return executeWidgetTypeDataHttp(input, WidgetType.PieChart);
+}, toolSchema);
 
-		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`);
-		}
+export const _widgetTypePieDataToolRpc = tool(async (input, { configurable }: RunnableConfig) => {
+	const { userId, merchantId } = configurable as { userId: number; merchantId: number };
+	const parsedInput = widgetTypePieDataInputSchema.parse(input);
 
-		const data = await response.json();
+	return executeWidgetTypePieDataRpc({
+		...parsedInput,
+		userContext: { userId, merchantId }
+	});
+}, toolSchema);
 
-		return data;
-	},
-	{
-		name: 'widget_type_pie_data_tool',
-		description:
-			'Fetches analytics data for a specific widget catalog item (presented as a pie chart) using filters, grouping, and time granularity as needed.',
-		schema: z.object({
-			widgetCatalogId: z.number(),
-			filter: filterSchema,
-			timezone: z.string(),
-			useTimeDimension: z.boolean(),
-			groupBy: z.number().int().min(0).max(10).optional(),
-			stackedBy: z.number().int().min(0).max(10).optional(),
-			granularity: z.number().int().min(0).max(3).optional()
-		})
-	}
-);
+export const widgetTypePieDataTool = !IS_DEV ? _widgetTypePieDataToolRpc : _widgetTypePieDataToolHttp;

@@ -2,22 +2,41 @@ import { BaseMessage } from '@langchain/core/messages';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 
 import { AnalyticsWorkflowStateType } from '../../graphs/analytics_sub_graph/types';
+import { SUPERVISOR_NODES } from '../../graphs/constants';
 import { SuperWorkflow } from '../../graphs/super_graph';
 import { REPORTS_BUILDER_AGENT_PROMPT } from '../../prompts';
-import { loadTool } from '../../tools';
+import { last180DaysTool, loadTool } from '../../tools';
 import { agentStateModifier, runAgentNode } from '../utils';
 import { ANALYTICS_MEMBERS } from './constants';
-import { reportsMeta } from './utils';
+import { handleUnauthorizedAccess, reportsMeta } from './utils';
 
 export const reportsAgent = async (state: AnalyticsWorkflowStateType): Promise<{ messages: BaseMessage[] }> => {
-	const meta = await reportsMeta(state.merchant_id, state.user_id);
+	const userContext = {
+		userId: state.user_id,
+		merchantId: state.merchant_id
+	};
 
-	const stateModifier = agentStateModifier(REPORTS_BUILDER_AGENT_PROMPT, [loadTool], ANALYTICS_MEMBERS, meta);
+	const meta = await handleUnauthorizedAccess(() => reportsMeta(userContext));
+
+	const stateModifier = agentStateModifier({
+		systemPrompt: REPORTS_BUILDER_AGENT_PROMPT,
+		tools: [loadTool, last180DaysTool],
+		teamMembers: ANALYTICS_MEMBERS,
+		time_zone: state.time_zone,
+		meta: JSON.stringify({ cubeDependencies: meta.cubeDependencies, cubes: meta.cubes })
+	});
 	const reportsReactAgent = createReactAgent({
 		llm: SuperWorkflow.llm,
-		tools: [loadTool],
-		stateModifier
+		tools: [loadTool, last180DaysTool],
+		stateModifier,
+		name: 'Reports'
 	});
 
-	return runAgentNode({ state, agent: reportsReactAgent, name: 'Reports' });
+	return runAgentNode({
+		state,
+		agent: reportsReactAgent,
+		name: 'Reports',
+		supervisorName: SUPERVISOR_NODES.AnalyticsSupervisor,
+		meta
+	});
 };

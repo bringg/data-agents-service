@@ -20,10 +20,17 @@
 		projectKey: '58bd22ec88282bf529e10e6226281dbc'
 	},
 
-	reportsDictURL: 'https://app.bringg.com/apps/analytics/reports/locale/en.json',
+	translationsDictURL: 'https://app.bringg.com/apps/analytics/reports/locale/en.json',
+
+	ragParams: {
+		corpus: 'projects/439732497020/locations/us-central1/ragCorpora/7205759403792793600',
+		url: 'https://us-central1-aiplatform.googleapis.com/v1/projects/439732497020/locations/us-central1:retrieveContexts'
+	},
 
 	sentry: {
 		enabled: true,
 		dsn: 'https://2b0cd5be6217dd10836f984f4981a246@o4507413897347072.ingest.de.sentry.io/4508907107647569'
-	}
+	},
+
+	kafkaFeedbackTopic: 'ai_analyst_feedbacks'
 }

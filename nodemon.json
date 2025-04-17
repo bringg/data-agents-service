@@ -4,6 +4,7 @@
 	"ext": "ts",
 	"exec": "npm run eslint-check && scripts/nodemon-start.sh",
 	"env": {
-		"NODE_ENV": "development"
+		"NODE_ENV": "development",
+		"REGION": "us2"
 	}
 }

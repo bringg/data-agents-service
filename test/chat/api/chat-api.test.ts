@@ -15,7 +15,7 @@ import { ChatHttpClient } from './chat-api-http-client';
  *    1. unauthorized user tries to access the chat endpoints.
  *    2. authorized user tries to access the chat endpoints and track it's thread messages.
  */
-describe('Chat Controller', () => {
+describe('Chat API', () => {
 	let threadId: string;
 	let client: ChatHttpClient;
 
@@ -26,28 +26,22 @@ describe('Chat Controller', () => {
 	});
 
 	describe('UNAUTHORIZED', () => {
-		it('POST /chat should return 401 Unauthorized', async () => {
-			const res = await client.removeAuth().newChat({ initialMessage: INITIAL_MSG });
+		it('GET /chat/:message should return 401 Unauthorized', async () => {
+			const res = await client.removeAuth().newChatMessage(INITIAL_MSG);
 
 			expect(res.status).equals(401);
 		});
 
-		it('POST /chat/:threadId should return 401 Unauthorized', async () => {
-			const res = await client.removeAuth().continueChat('fake-thread-id', { message: ADDITIONAL_MSG });
+		it('GET /chat/history/:message?threadId should return 401 Unauthorized', async () => {
+			const res = await client.removeAuth().getChatHistory('fake-thread-id');
 
 			expect(res.status).equals(401);
 		});
 
-		it('GET /chat/:threadId should return 401 Unauthorized', async () => {
-			const res = await client.removeAuth().getChatByThreadId('fake-thread-id');
-
-			expect(res.status).equals(401);
-		});
-
-		it('POST /chat should return 401 Unauthorized', async () => {
+		it('GET /chat/:message should return 401 Unauthorized when missing user id', async () => {
 			const res = await client
 				.switchIdentity({ merchantId: 1, userId: undefined as unknown as number })
-				.newChat({ initialMessage: INITIAL_MSG });
+				.newChatMessage(INITIAL_MSG);
 
 			const error = res.data as unknown as { title?: string };
 
@@ -57,9 +51,9 @@ describe('Chat Controller', () => {
 	});
 
 	describe('AUTHORIZED', () => {
-		it('POST /chat should create a new chat and return an SSE message', async () => {
+		it('GET /chat/:message should create a new chat and return an SSE message', async () => {
 			// Send the request
-			const res = await client.newChat({ initialMessage: INITIAL_MSG });
+			const res = await client.newChatMessage(INITIAL_MSG);
 
 			expect(res.status).equals(200);
 			expect(res.data).includes('Yahav');
@@ -72,9 +66,9 @@ describe('Chat Controller', () => {
 			threadId = data.split('\n')[0].split(' ')[1];
 		});
 
-		it('POST /chat/:threadId should append a message and return an SSE message', async () => {
+		it('GET /chat/:message?threadId should append a message and return an SSE message', async () => {
 			// Send the request
-			const res = await client.continueChat(threadId, { message: ADDITIONAL_MSG });
+			const res = await client.newChatMessage(ADDITIONAL_MSG, threadId);
 
 			expect(res.status).equals(200);
 			expect(res.data).includes('11,025');
@@ -89,9 +83,9 @@ describe('Chat Controller', () => {
 			expect(resThreadId).equals(threadId);
 		});
 
-		it('POST /chat/:threadId should result in an error message but status 200 because of irrelevant message', async () => {
+		it('GET /chat/:message?threadId should result in an error message but status 200 because of irrelevant message', async () => {
 			// Send the request
-			const res = await client.continueChat(threadId, { message: IRRELEVANT_MSG });
+			const res = await client.newChatMessage(IRRELEVANT_MSG, threadId);
 
 			expect(res.status).equals(200);
 			expect(res.headers['content-type']).equals('text/event-stream');
@@ -104,7 +98,7 @@ describe('Chat Controller', () => {
 			expect(resThreadId).equals(threadId);
 		});
 
-		it('GET /chat/:threadId should return an array of chat messages from a given thread', async () => {
+		it('GET /chat/history/:threadId should return an array of chat messages from a given thread', async () => {
 			// Prepare a sample chat history.
 			const chatHistory = [
 				{ content: INITIAL_MSG },
@@ -115,27 +109,27 @@ describe('Chat Controller', () => {
 				{ content: ERRORS.BAD_INPUT, name: 'SemanticRouter' }
 			] as BaseMessage[];
 
-			const res = await client.getChatByThreadId(threadId);
+			const res = await client.getChatHistory(threadId);
 
 			// Validate that the GET endpoint returns the expected array of messages.
 			expect(res.data).to.deep.equal(chatHistory);
 		});
 
-		it('GET /chat/:threadId should return an empty array of chat messages from a non-existent threadId', async () => {
+		it('GET /chat/history/:threadId should return an empty array of chat messages from a non-existent threadId', async () => {
 			// Prepare a sample chat history.
 			const chatHistory = [] as BaseMessage[];
 
-			const res = await client.getChatByThreadId(`fake-thread-id`);
+			const res = await client.getChatHistory(`fake-thread-id`);
 
 			// Validate that the GET endpoint returns the expected array of messages.
 			expect(res.data).to.deep.equal(chatHistory);
 		});
 
-		it('GET /chat/:threadId should return an empty array with right thread id but wrong user', async () => {
+		it('GET /chat/history/:threadId should return an empty array with right thread id but wrong user', async () => {
 			// Prepare a sample chat history.
 			const chatHistory = [] as BaseMessage[];
 
-			const res = await client.switchIdentity({ merchantId: 1, userId: 2 }).getChatByThreadId(threadId);
+			const res = await client.switchIdentity({ merchantId: 1, userId: 2 }).getChatHistory(threadId);
 
 			// Validate that the GET endpoint returns the expected array of messages.
 			expect(res.data).to.deep.equal(chatHistory);
