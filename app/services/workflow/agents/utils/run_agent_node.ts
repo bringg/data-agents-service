@@ -19,16 +19,20 @@ export const runAgentNode = async (params: {
 	supervisorName: string;
 	hasHistory?: boolean;
 	hasToolHistory?: boolean;
+	meta?: any;
 }): Promise<{ messages: HumanMessage[]; tool_messages?: BaseMessage[] }> => {
 	const { state, agent, name } = params;
 
-	const result: { messages: BaseMessage[] } = await agent.invoke({
-		messages: [
-			...(params.hasHistory ? state.messages : []),
-			...(params.hasToolHistory && state.tool_messages ? state.tool_messages : []),
-			new HumanMessage({ content: state.instructions, name: params.supervisorName })
-		]
-	});
+	const result: { messages: BaseMessage[] } = await agent.invoke(
+		{
+			messages: [
+				...(params.hasHistory ? state.messages : []),
+				...(params.hasToolHistory && state.tool_messages ? state.tool_messages : []),
+				new HumanMessage({ content: state.instructions, name: params.supervisorName })
+			]
+		},
+		params.meta ? { configurable: { meta: params.meta } } : undefined
+	);
 
 	// The last three messages are the most relevant => tool_call, tool_res, ai_res
 	const lastMessages = result.messages.slice(-3);

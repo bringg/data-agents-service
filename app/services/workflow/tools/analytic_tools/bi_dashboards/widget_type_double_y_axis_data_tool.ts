@@ -1,42 +1,34 @@
 import { WidgetType } from '@bringg/types';
+import { RunnableConfig } from '@langchain/core/runnables';
 import { tool } from '@langchain/core/tools';
-import { z } from 'zod';
 
-import { filterSchema } from './schemas';
+import { IS_DEV } from '../../../../../common/constants';
+import { widgetTypeDoubleYAxisDataInputSchema } from './schemas/widgets_schemas';
+import { executeWidgetTypeDataHttp } from './utils/http_utils';
+import { executeWidgetTypeDoubleYAxisDataRpc } from './utils/rpc_utils';
 
-export const widgetTypeDoubleYAxisDataTool = tool(
-	async input => {
-		const { widgetCatalogId, ...body } = input;
+const toolSchema = {
+	name: 'widget_type_double_y_axis_data_tool',
+	description:
+		'Fetches analytics data for a specific widget catalog item (presented as a double Y axis chart) using filters, grouping, and time granularity as needed.',
+	schema: widgetTypeDoubleYAxisDataInputSchema,
+	verboseParsingErrors: true
+};
 
-		const url = `https://${process.env.REGION}-admin-api.bringg.com/analytics-service/v1/parent-app/own-fleet/dashboards/widget-type/${WidgetType.DoubleYAxisChart}/widgets-catalog-id/${widgetCatalogId}/get-data`;
-		const jwt = process.env.analyticsJWT;
+export const _widgetTypeDoubleYAxisDataToolHttp = tool(async input => {
+	return executeWidgetTypeDataHttp(input, WidgetType.DoubleYAxisChart);
+}, toolSchema);
 
-		const response = await fetch(url, {
-			method: 'POST',
-			headers: {
-				Authorization: `Bearer ${jwt}`,
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(body)
-		});
+export const _widgetTypeDoubleYAxisDataToolRpc = tool(async (input, { configurable }: RunnableConfig) => {
+	const { userId, merchantId } = configurable as { userId: number; merchantId: number };
+	const parsedInput = widgetTypeDoubleYAxisDataInputSchema.parse(input);
 
-		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`);
-		}
+	return executeWidgetTypeDoubleYAxisDataRpc({
+		...parsedInput,
+		userContext: { userId, merchantId }
+	});
+}, toolSchema);
 
-		const data = await response.json();
-
-		return data;
-	},
-	{
-		name: 'widget_type_double_y_axis_data_tool',
-		description:
-			'Fetches analytics data for a specific widget catalog item (presented as a double Y-axis chart) using filters, grouping, and time granularity as needed.',
-		schema: z.object({
-			widgetCatalogId: z.number(),
-			filter: filterSchema,
-			timezone: z.string()
-		}),
-		verboseParsingErrors: true
-	}
-);
+export const widgetTypeDoubleYAxisDataTool = !IS_DEV
+	? _widgetTypeDoubleYAxisDataToolRpc
+	: _widgetTypeDoubleYAxisDataToolHttp;

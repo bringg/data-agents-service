@@ -1,4 +1,5 @@
 import { IS_DEV } from '../../../../../../common/constants';
+import { getItemIdTool } from '../get_item_id_tool';
 import { widgetTypeBarDataTool } from '../widget_type_bar_data_tool';
 import { widgetTypeBasicLineDataTool } from '../widget_type_basic_line_data_tool';
 import { widgetTypeDonutDataTool } from '../widget_type_donut_data_tool';
@@ -16,6 +17,7 @@ export const WIDGET_DATA_TOOLS = [
 	widgetTypeMultiHorizontalReversedBarDataTool,
 	widgetTypeNumberDataTool,
 	widgetTypeReversedBarDataTool,
+	getItemIdTool,
 	// In dev we can't use these tools because they are not implemented via HTTP
 	...(!IS_DEV
 		? [

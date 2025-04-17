@@ -5,10 +5,12 @@ import { AnnotationRoot, StateType } from '@langchain/langgraph/dist/graph';
 type AnalyticsAnnotationRoot = {
 	user_id: typeof Annotation<number>;
 	merchant_id: typeof Annotation<number>;
+	time_zone: typeof Annotation<string>;
 	messages: BinaryOperatorAggregate<BaseMessage[], BaseMessage[]>;
 	next: BinaryOperatorAggregate<object, unknown>;
 	instructions: BinaryOperatorAggregate<string, string>;
 	tool_messages: BinaryOperatorAggregate<BaseMessage[], BaseMessage[]>;
+	currency: typeof Annotation<string>;
 };
 
 export type AnalyticsGraphStateType = AnnotationRoot<AnalyticsAnnotationRoot>;

@@ -5,6 +5,6 @@
 	"exec": "npm run eslint-check && scripts/nodemon-start.sh",
 	"env": {
 		"NODE_ENV": "development",
-		"REGION": "eu3"
+		"REGION": "us2"
 	}
 }
