@@ -2,6 +2,7 @@ import { logger, throwProblem } from '@bringg/service';
 import redis from '@bringg/service/lib/redis';
 import { BaseMessage, HumanMessage, isAIMessageChunk } from '@langchain/core/messages';
 import { RunnableLambda } from '@langchain/core/runnables';
+import { concat } from '@langchain/core/utils/stream';
 import { Annotation, END, START, StateGraph, StreamMode } from '@langchain/langgraph';
 import { Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
@@ -18,8 +19,10 @@ import { MAIN_SUPERVISOR_PROMPT } from '../../prompts';
 import { createLLM } from '../../utils';
 import { AnalyticsWorkflow } from '../analytics_sub_graph';
 import { AnalyticsWorkflowStateType } from '../analytics_sub_graph/types';
+import { SUPERVISOR_NODES } from '../constants';
 import { GRAPH_STATUS_DESCRIPTION } from './constants';
 import { CompiledSuperWorkflowType, SSEEvent, SuperGraphStateType, SuperWorkflowStateType } from './types';
+import { getCurrentNodeName } from './utils';
 
 export class SuperWorkflow {
 	private readonly options = { recursionLimit: 15, subgraphs: true, streamMode: 'messages' as StreamMode };
@@ -40,6 +43,7 @@ export class SuperWorkflow {
 			merchant_id: Annotation<number>,
 			user_id: Annotation<number>,
 			time_zone: Annotation<string>,
+			currency: Annotation<string>,
 			messages: Annotation<BaseMessage[]>({
 				reducer: (x, y) =>
 					x.length > 0 && y.length > 0 && y[y.length - 1].content === x[x.length - 1].content
@@ -94,19 +98,19 @@ export class SuperWorkflow {
 		this.superGraph = new StateGraph(this.GraphState)
 			.addNode('AnalyticsTeam', getState.pipe(analyticsSubGraph).pipe(joinGraph), {})
 			.addNode('Documentation', documentationAgent)
-			.addNode('Supervisor', supervisorAgent)
+			.addNode(SUPERVISOR_NODES.Supervisor, supervisorAgent)
 			.addNode('HumanNode', humanNode)
 			.addNode('Composer', composerAgent)
-			.addEdge('AnalyticsTeam', 'Supervisor')
-			.addEdge('Documentation', 'Supervisor')
+			.addEdge('AnalyticsTeam', SUPERVISOR_NODES.Supervisor)
+			.addEdge('Documentation', SUPERVISOR_NODES.Supervisor)
 			/* eslint-disable-next-line */
-			.addConditionalEdges('Supervisor', (x: any) => x.next, {
+			.addConditionalEdges(SUPERVISOR_NODES.Supervisor, (x: any) => x.next, {
 				AnalyticsTeam: 'AnalyticsTeam',
 				Documentation: 'Documentation',
 				HumanNode: 'HumanNode',
 				FINISH: 'Composer'
 			})
-			.addEdge(START, 'Supervisor')
+			.addEdge(START, SUPERVISOR_NODES.Supervisor)
 			.addEdge('Composer', END)
 			.compile({ checkpointer: this.checkpointer });
 	}
@@ -157,6 +161,35 @@ export class SuperWorkflow {
 		);
 	}
 
+	private async handleSupervisorMessage(
+		response: Response,
+		threadId: string,
+		node: string,
+		prevNode: string,
+		metadata: any,
+		gathered: any
+	): Promise<any> {
+		const isSupervisorNode = Boolean(SUPERVISOR_NODES[node]);
+
+		// Gather content from both supervisor types
+		if (isSupervisorNode && node === prevNode) {
+			gathered = gathered !== undefined ? concat(gathered, metadata[0]) : metadata[0];
+		}
+
+		// Stream supervisor outputs when switching to a different node
+		if (gathered && isSupervisorNode && node !== prevNode) {
+			const { statusMessage, next } = gathered.tool_calls[0].args;
+
+			if (next !== 'HumanNode') {
+				logger.info('Streaming Supervisor message', { message: statusMessage });
+				this.writeToStream(response, threadId, statusMessage, 'Status-Description');
+			}
+			gathered = undefined;
+		}
+
+		return gathered;
+	}
+
 	@SetSSE
 	@IsRelevant
 	/**
@@ -168,7 +201,8 @@ export class SuperWorkflow {
 		merchantId: number,
 		userId: number,
 		threadId: string = uuidv4(),
-		time_zone: string | null
+		time_zone: string | null,
+		currency: string | null
 	): Promise<void> {
 		const stream = await SuperWorkflow.superGraph.stream(
 			{
@@ -176,20 +210,24 @@ export class SuperWorkflow {
 				messages: [new HumanMessage({ content: userInput, name: 'User' })],
 				merchant_id: merchantId,
 				user_id: userId,
-				...(time_zone ? { time_zone } : {})
+				...(time_zone ? { time_zone } : {}),
+				...(currency ? { currency } : {})
 			},
 			{ ...this.options, configurable: { thread_id: threadId, userId, merchantId } }
 		);
 
 		// Extract graph events and stream them back
 		try {
-			let prevNode = '';
+			let prevNode = SUPERVISOR_NODES.Supervisor;
+			let gathered = undefined;
 
 			this.writeToStream(response, threadId, threadId, 'ThreadId');
 
-			for await (const [_, metadata] of stream) {
-				const node = metadata[1]?.langgraph_node as string;
+			for await (const [nodes, metadata] of stream) {
+				const node = nodes.length > 0 ? getCurrentNodeName(nodes) : SUPERVISOR_NODES.Supervisor;
 				const graphStatus = GRAPH_STATUS_DESCRIPTION[node];
+
+				gathered = await this.handleSupervisorMessage(response, threadId, node, prevNode, metadata, gathered);
 
 				// Stream graph status description
 				if (graphStatus && prevNode !== node) {
@@ -202,15 +240,22 @@ export class SuperWorkflow {
 					logger.info('Streaming AI message', { message: metadata[0].content });
 					this.writeToStream(response, threadId, metadata[0].content as string, 'Response');
 				}
+
+				prevNode = node;
 			}
 		} catch (e) {
 			logger.error('Error streaming graph', { error: e });
 			response.status(StatusCodes.INTERNAL_SERVER_ERROR);
 			this.writeToStream(response, threadId, ERRORS.STREAM_ERROR, 'Error');
+			this.addConversationMessages(threadId, userId, merchantId, [
+				new HumanMessage({ content: ERRORS.STREAM_ERROR, name: 'Composer' })
+			]);
 		}
+
+		this.writeToStream(response, threadId, 'Stream ended', 'Stream-Ended');
 	}
 
-	public async writeToStream(response: Response, threadId: string, message: string, event: SSEEvent): Promise<void> {
+	public writeToStream(response: Response, threadId: string, message: string, event: SSEEvent): void {
 		response.write(`id: ${threadId}\n`);
 		response.write(`event: ${event}\n`);
 		response.write(`data: ${message}\n\n`);

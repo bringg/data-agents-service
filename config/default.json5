@@ -30,5 +30,7 @@
 	sentry: {
 		enabled: true,
 		dsn: 'https://2b0cd5be6217dd10836f984f4981a246@o4507413897347072.ingest.de.sentry.io/4508907107647569'
-	}
+	},
+
+	kafkaFeedbackTopic: 'ai_analyst_feedbacks'
 }

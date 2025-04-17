@@ -6,6 +6,7 @@ import { analyzerAgent, biDashboardsAgent, reportsAgent } from '../../agents';
 import { ANALYTICS_MEMBERS } from '../../agents/analytics_level_agents/constants';
 import { createTeamSupervisor } from '../../agents/utils';
 import { ANALYTICS_SUPERVISOR_PROMPT } from '../../prompts';
+import { SUPERVISOR_NODES } from '../constants';
 import { SuperWorkflow } from '../super_graph';
 import { AnalyticsGraphStateType, AnalyticsWorkflowStateType } from './types';
 
@@ -18,6 +19,7 @@ export class AnalyticsWorkflow {
 			merchant_id: Annotation<number>,
 			user_id: Annotation<number>,
 			time_zone: Annotation<string>,
+			currency: Annotation<string>,
 			messages: Annotation<BaseMessage[]>({
 				reducer: (x, y) => x.concat(y),
 				default: () => []
@@ -53,13 +55,13 @@ export class AnalyticsWorkflow {
 		const analyticsGraph = new StateGraph(this.GraphState)
 			.addNode('BiDashboards', biDashboardsAgent)
 			.addNode('Reports', reportsAgent)
-			.addNode('AnalyticsSupervisor', supervisorAgent)
+			.addNode(SUPERVISOR_NODES.AnalyticsSupervisor, supervisorAgent)
 			.addNode('Analyzer', analyzerAgent)
-			.addEdge('BiDashboards', 'AnalyticsSupervisor')
-			.addEdge('Reports', 'AnalyticsSupervisor')
-			.addEdge('Analyzer', 'AnalyticsSupervisor')
-			/* eslint-disable-next-line */
+			.addEdge('BiDashboards', SUPERVISOR_NODES.AnalyticsSupervisor)
+			.addEdge('Reports', SUPERVISOR_NODES.AnalyticsSupervisor)
+			.addEdge('Analyzer', SUPERVISOR_NODES.AnalyticsSupervisor)
 			.addConditionalEdges('AnalyticsSupervisor', (x: any) => x.next, {
+				/* eslint-disable-next-line */
 				BiDashboards: 'BiDashboards',
 				Reports: 'Reports',
 				Analyzer: 'Analyzer',
@@ -68,14 +70,22 @@ export class AnalyticsWorkflow {
 			.addEdge(START, 'AnalyticsSupervisor');
 
 		const enterAnalyticsChain = RunnableLambda.from(
-			({ messages, instructions, merchant_id, user_id, time_zone }: Partial<AnalyticsWorkflowStateType>) => {
+			({
+				messages,
+				instructions,
+				merchant_id,
+				user_id,
+				time_zone,
+				currency
+			}: Partial<AnalyticsWorkflowStateType>) => {
 				return {
 					messages: messages,
 					instructions: instructions,
 					merchant_id: merchant_id,
 					user_id: user_id,
 					time_zone: time_zone,
-					team_members: ANALYTICS_MEMBERS
+					team_members: ANALYTICS_MEMBERS,
+					currency: currency
 				};
 			}
 		);

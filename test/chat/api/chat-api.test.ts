@@ -33,7 +33,7 @@ describe('Chat API', () => {
 		});
 
 		it('GET /chat/history/:message?threadId should return 401 Unauthorized', async () => {
-			const res = await client.removeAuth().getChatHistory(INITIAL_MSG, 'fake-thread-id');
+			const res = await client.removeAuth().getChatHistory('fake-thread-id');
 
 			expect(res.status).equals(401);
 		});

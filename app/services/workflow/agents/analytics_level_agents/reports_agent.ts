@@ -2,12 +2,13 @@ import { BaseMessage } from '@langchain/core/messages';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 
 import { AnalyticsWorkflowStateType } from '../../graphs/analytics_sub_graph/types';
+import { SUPERVISOR_NODES } from '../../graphs/constants';
 import { SuperWorkflow } from '../../graphs/super_graph';
 import { REPORTS_BUILDER_AGENT_PROMPT } from '../../prompts';
 import { last180DaysTool, loadTool } from '../../tools';
 import { agentStateModifier, runAgentNode } from '../utils';
 import { ANALYTICS_MEMBERS } from './constants';
-import { reportsMeta } from './utils';
+import { handleUnauthorizedAccess, reportsMeta } from './utils';
 
 export const reportsAgent = async (state: AnalyticsWorkflowStateType): Promise<{ messages: BaseMessage[] }> => {
 	const userContext = {
@@ -15,36 +16,27 @@ export const reportsAgent = async (state: AnalyticsWorkflowStateType): Promise<{
 		merchantId: state.merchant_id
 	};
 
-	const meta = await (async () => {
-		try {
-			return await reportsMeta(userContext);
-		} catch (e) {
-			if (e instanceof Error && e.message.includes('403')) {
-				throw new Error(
-					'Current user is not authorized to access this feature. Use other agents to get the data you need.'
-				);
-			}
-			throw e;
-		}
-	})();
+	const meta = await handleUnauthorizedAccess(() => reportsMeta(userContext));
 
 	const stateModifier = agentStateModifier({
 		systemPrompt: REPORTS_BUILDER_AGENT_PROMPT,
 		tools: [loadTool, last180DaysTool],
 		teamMembers: ANALYTICS_MEMBERS,
 		time_zone: state.time_zone,
-		meta
+		meta: JSON.stringify({ cubeDependencies: meta.cubeDependencies, cubes: meta.cubes })
 	});
 	const reportsReactAgent = createReactAgent({
 		llm: SuperWorkflow.llm,
 		tools: [loadTool, last180DaysTool],
-		stateModifier
+		stateModifier,
+		name: 'Reports'
 	});
 
 	return runAgentNode({
 		state,
 		agent: reportsReactAgent,
 		name: 'Reports',
-		supervisorName: 'Analytics_Supervisor'
+		supervisorName: SUPERVISOR_NODES.AnalyticsSupervisor,
+		meta
 	});
 };

@@ -15,12 +15,14 @@ export const agentStateModifier = ({
 	tools,
 	teamMembers,
 	time_zone,
+	currency,
 	meta
 }: {
 	systemPrompt: string;
 	tools: StructuredToolInterface[];
 	teamMembers: string[];
 	time_zone?: string;
+	currency?: string;
 	meta?: string;
 }): ((state: typeof MessagesAnnotation.State) => BaseMessage[]) => {
 	const toolNames = tools.map(t => t.name).join(', ');
@@ -39,7 +41,7 @@ export const agentStateModifier = ({
 
 			  Current time: ${new Date().toISOString()}
 			  ${time_zone ? `Timezone of the user: ${time_zone}` : ''}
-
+			  ${currency ? `Currency of the user: ${currency}` : ''}
 		${
 			meta
 				? `**Metadata Message:**

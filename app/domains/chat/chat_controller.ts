@@ -1,15 +1,17 @@
 import { throwProblem } from '@bringg/service';
-import { Merchant as MerchantModel } from '@bringg/service-data';
+import { Merchant as MerchantModel, MerchantConfiguration } from '@bringg/service-data';
 import { MessageContent } from '@langchain/core/messages';
 import { Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { Context, GET, Path, PathParam, QueryParam, Security, ServiceContext } from 'typescript-rest';
+import { Context, GET, Path, PathParam, QueryParam, ServiceContext } from 'typescript-rest';
 
 import { IS_DEV, IS_TEST } from '../../common/constants';
+import { conditionalSecurity } from '../../common/utils/decorator_utils';
+import { validateUser } from '../../common/utils/user_validation';
 import { workflow } from '../../services/workflow/graphs/super_graph';
 
 @Path('chat')
-@Security('*', 'bringg-jwt')
+@conditionalSecurity()
 export class ChatController {
 	@Context
 	private context: ServiceContext;
@@ -24,12 +26,23 @@ export class ChatController {
 		@PathParam('message') message: string,
 		@QueryParam('threadId') threadId: string
 	): Promise<void> {
-		const { merchantId, userId } = this.validateUser();
-		const time_zone = threadId ? null : await this.getMerchantTimezone(merchantId);
+		const { merchantId, userId } = validateUser(this.context);
+
+		const [time_zone, currency] = threadId
+			? [null, null]
+			: await Promise.all([this.getMerchantTimezone(merchantId), this.getMerchantPriceCurrency(merchantId)]);
 
 		const response = this.context.response as unknown as Response;
 
-		await workflow.streamGraph(response, message, merchantId as number, userId as number, threadId, time_zone);
+		await workflow.streamGraph(
+			response,
+			message,
+			merchantId as number,
+			userId as number,
+			threadId,
+			time_zone,
+			currency
+		);
 	}
 
 	@Path(`/history/:threadId`)
@@ -41,7 +54,7 @@ export class ChatController {
 	public async getChatByThreadId(
 		@PathParam('threadId') threadId: string
 	): Promise<{ content: MessageContent; name?: string }[]> {
-		const { merchantId, userId } = await this.validateUser();
+		const { merchantId, userId } = validateUser(this.context);
 
 		const messages = await workflow.getConversationMessages(threadId, userId, merchantId);
 
@@ -52,30 +65,10 @@ export class ChatController {
 		}));
 	}
 
-	/**
-	 * Validates the user and returns the userId and merchantId as numbers.
-	 * @returns { userId: number, merchantId: number }
-	 */
-	private validateUser(): { userId: number; merchantId: number } {
-		// For dev purposes
-		if (IS_DEV) {
-			return { userId: 10267117, merchantId: 2288 };
-		}
-
-		const { userId, merchantId } = this.context.request.user || {};
-
-		// eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-		if (!userId || !merchantId) {
-			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing user id');
-		}
-
-		return { userId, merchantId };
-	}
-
 	private async getMerchantTimezone(merchantId: number): Promise<string> {
 		// For dev purposes
 		if (IS_DEV || IS_TEST) {
-			return 'America/New_York';
+			return process.env.REGION?.startsWith('eu') ? 'Europe/London' : 'America/New_York';
 		}
 
 		const merchant = await MerchantModel.find(merchantId);
@@ -85,5 +78,20 @@ export class ChatController {
 		}
 
 		return merchant.time_zone;
+	}
+
+	private async getMerchantPriceCurrency(merchantId: number): Promise<string> {
+		// For dev purposes
+		if (IS_DEV || IS_TEST) {
+			return process.env.REGION?.startsWith('eu') ? 'EUR' : 'USD';
+		}
+
+		const merchantConfiguration = await MerchantConfiguration.find(merchantId);
+
+		if (!merchantConfiguration) {
+			throwProblem(StatusCodes.UNAUTHORIZED, 'Missing merchant configuration');
+		}
+
+		return merchantConfiguration.price_currency;
 	}
 }
