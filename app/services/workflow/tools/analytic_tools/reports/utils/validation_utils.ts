@@ -101,11 +101,13 @@ const validateSingleFilter = async (
 			const remainingText = remainingCount > 0 ? ` and ${remainingCount} more values` : '';
 
 			throw new Error(
-				`Invalid filter value for ${
-					filter.member
-				}. It seems like you forgot using the 2 step process for filters. Here some filter values I found for you that you can use again: ${firstTenValues.join(
-					', '
-				)}${remainingText}`
+				`Invalid filter value for ${filter.member}.
+				It seems like you forgot using the 2 step process for filters.
+				The query I ran to get the valid values is: 
+				\`\`\`json
+				${JSON.stringify(validationQuery)}
+				\`\`\`
+				Here are some VALID filter values for ${filter.member} that you can use: ${firstTenValues.join(', ')}${remainingText}`
 			);
 		}
 	}

@@ -2,6 +2,7 @@ import { BaseMessage } from '@langchain/core/messages';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 
 import { AnalyticsWorkflowStateType } from '../../graphs/analytics_sub_graph/types';
+import { SUPERVISOR_NODES } from '../../graphs/constants';
 import { SuperWorkflow } from '../../graphs/super_graph';
 import { REPORTS_BUILDER_AGENT_PROMPT } from '../../prompts';
 import { last180DaysTool, loadTool } from '../../tools';
@@ -27,14 +28,15 @@ export const reportsAgent = async (state: AnalyticsWorkflowStateType): Promise<{
 	const reportsReactAgent = createReactAgent({
 		llm: SuperWorkflow.llm,
 		tools: [loadTool, last180DaysTool],
-		stateModifier
+		stateModifier,
+		name: 'Reports'
 	});
 
 	return runAgentNode({
 		state,
 		agent: reportsReactAgent,
 		name: 'Reports',
-		supervisorName: 'Analytics_Supervisor',
+		supervisorName: SUPERVISOR_NODES.AnalyticsSupervisor,
 		meta
 	});
 };

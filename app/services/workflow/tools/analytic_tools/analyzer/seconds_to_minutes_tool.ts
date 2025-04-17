@@ -23,7 +23,7 @@ export const secondsToMinutesTool = tool(
 		name: 'seconds_to_minutes',
 		description: 'Converts seconds to a formatted time string in HH:mm:ss format',
 		schema: z.object({
-			seconds: z.number().int().nonnegative().describe('Number of seconds to convert to HH:mm:ss format')
+			seconds: z.number().nonnegative().describe('Number of seconds to convert to HH:mm:ss format')
 		})
 	}
 );

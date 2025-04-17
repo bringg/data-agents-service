@@ -13,7 +13,9 @@ export const composerAgent = async (
 	]);
 
 	const formattedPrompt = await prompt.formatMessages({
-		messages: state.messages
+		messages: state.messages,
+		currency: state.currency,
+		time_zone: state.time_zone
 	});
 
 	const { content } = await SuperWorkflow.userFacingLLM.invoke(formattedPrompt);
